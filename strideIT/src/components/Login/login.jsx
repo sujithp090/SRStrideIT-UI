@@ -1,5 +1,4 @@
 import { useState } from "react";
-import "./login.css";
 
 // Hard-coded users — no backend
 const USERS = [
@@ -10,7 +9,7 @@ const USERS = [
     name: "Admin User",
   },
   {
-    email: "user@company.com",
+    email: "user",
     password: "user123",
     role: "user",
     name: "Jane Doe",
@@ -29,7 +28,7 @@ export default function LoginScreen({ onLogin }) {
       (u) =>
         u.email === email.trim().toLowerCase() &&
         u.password === password &&
-        (isAdmin ? u.role === "admin" : u.role === "user")
+        (isAdmin ? u.role === "admin" : u.role === "user"),
     );
     if (match) {
       onLogin(match);

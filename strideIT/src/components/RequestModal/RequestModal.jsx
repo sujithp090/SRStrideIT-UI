@@ -1,5 +1,4 @@
 import { useState, useRef } from "react";
-import "./RequestModal.css";
 
 // ── Shared modal chrome ───────────────────────────────────────────────────────
 function ModalChrome({ onClose, children }) {
@@ -32,14 +31,35 @@ function ModalChrome({ onClose, children }) {
 }
 
 // ── New Interview Request Modal ───────────────────────────────────────────────
-export function NewRequestModal({ onClose, onSubmit }) {
+export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
+  const isValidDate = selectedTimeSlot && selectedTimeSlot instanceof Date;
+
+  const initDate = isValidDate
+    ? selectedTimeSlot.toISOString().split("T")[0]
+    : "";
+  const initTime = isValidDate
+    ? selectedTimeSlot.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+    : "10:00";
+
   const [candidate, setCandidate] = useState("");
-  const [interviewer, setInterviewer] = useState("");
-  const [date, setDate] = useState("");
-  const [startTime, setStart] = useState("10:00");
-  const [endTime, setEnd] = useState("11:00");
-  const [room, setRoom] = useState("");
-  const [notes, setNotes] = useState("");
+  const [date, setDate] = useState(initDate);
+  const [startTime, setStart] = useState(initTime);
+  const [endTime, setEnd] = useState(
+    isValidDate
+      ? new Date(selectedTimeSlot.getTime() + 1800000).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        })
+      : "10:30",
+  );
+  const [company, setCompany] = useState("");
+  const [round, setRound] = useState("L1");
+  const [customRound, setCustomRound] = useState("");
   const [file, setFile] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -54,18 +74,21 @@ export function NewRequestModal({ onClose, onSubmit }) {
   };
 
   const handleSubmit = () => {
-    if (!candidate || !date) return;
+    if (!candidate || !date || !company) return;
     setSubmitted(true);
     onSubmit &&
       onSubmit({
         candidate,
-        interviewer,
+        company,
+        round: round === "Custom" ? customRound : round,
         date,
         startTime,
         endTime,
-        room,
-        notes,
-        file,
+        image: file ? URL.createObjectURL(file) : null,
+        status: "pending",
+        title: `Interview - ${candidate}`,
+        start: new Date(date + "T" + startTime),
+        end: new Date(date + "T" + endTime),
       });
   };
 
@@ -137,16 +160,16 @@ export function NewRequestModal({ onClose, onSubmit }) {
                 <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
               </svg>
             </div>
-            <div className="modal-upload-text">Drop resume / docs here</div>
+            <div className="modal-upload-text">Drop images here</div>
             <div className="modal-upload-sub">
-              or <span className="modal-upload-link">browse files</span> (PDF,
-              DOCX, up to 10 MB)
+              or <span className="modal-upload-link">browse files</span> (JPG,
+              PNG, GIF, WebP, up to 10 MB)
             </div>
             <input
               ref={fileRef}
               type="file"
               hidden
-              accept=".pdf,.doc,.docx"
+              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
               onChange={(e) => handleFile(e.target.files[0])}
             />
           </div>
@@ -207,66 +230,53 @@ export function NewRequestModal({ onClose, onSubmit }) {
             />
           </div>
           <div className="modal-field">
-            <label className="modal-label">Interviewer</label>
+            <label className="modal-label">Company *</label>
             <input
               className="modal-input"
-              placeholder="e.g. Bob Smith"
-              value={interviewer}
-              onChange={(e) => setInterviewer(e.target.value)}
+              placeholder="e.g. Acme Corp"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
             />
           </div>
         </div>
 
         <div className="modal-input-row">
           <div className="modal-field">
-            <label className="modal-label">Date *</label>
-            <input
+            <label className="modal-label">Round *</label>
+            <select
               className="modal-input"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
+              value={round}
+              onChange={(e) => setRound(e.target.value)}
+              style={{
+                borderLeft: `4px solid ${
+                  round === "L1"
+                    ? "#3b82f6"
+                    : round === "L2"
+                      ? "#10b981"
+                      : round === "Client round"
+                        ? "#f97316"
+                        : "#7f1d1d"
+                }`,
+              }}
+            >
+              <option value="L1">L1</option>
+              <option value="L2">L2</option>
+              <option value="Client round">Client round</option>
+              <option value="Custom">Custom</option>
+            </select>
           </div>
-          <div className="modal-field">
-            <label className="modal-label">Room / Location</label>
-            <input
-              className="modal-input"
-              placeholder="e.g. Room A / Zoom"
-              value={room}
-              onChange={(e) => setRoom(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="modal-input-row">
-          <div className="modal-field">
-            <label className="modal-label">Start Time</label>
-            <input
-              className="modal-input"
-              type="time"
-              value={startTime}
-              onChange={(e) => setStart(e.target.value)}
-            />
-          </div>
-          <div className="modal-field">
-            <label className="modal-label">End Time</label>
-            <input
-              className="modal-input"
-              type="time"
-              value={endTime}
-              onChange={(e) => setEnd(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="modal-field">
-          <label className="modal-label">Notes</label>
-          <input
-            className="modal-input"
-            placeholder="Any additional context..."
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
+          {round === "Custom" && (
+            <div className="modal-field">
+              <label className="modal-label">Custom Round *</label>
+              <input
+                className="modal-input"
+                placeholder="Max 10 chars"
+                maxLength="10"
+                value={customRound}
+                onChange={(e) => setCustomRound(e.target.value)}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -277,7 +287,12 @@ export function NewRequestModal({ onClose, onSubmit }) {
         <button
           className="btn-submit"
           onClick={handleSubmit}
-          disabled={!candidate || !date}
+          disabled={
+            !candidate ||
+            !date ||
+            !company ||
+            (round === "Custom" && !customRound)
+          }
         >
           Submit Request
         </button>
@@ -293,18 +308,12 @@ export function EventDetailModal({
   onClose,
   onApprove,
   onReject,
+  onDelete,
 }) {
   if (!event) return null;
 
   const fmt = (d) =>
     d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-  const dateStr = event.start.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
 
   return (
     <ModalChrome onClose={onClose}>
@@ -312,180 +321,75 @@ export function EventDetailModal({
         <div className="modal-section-header">
           <div className="modal-section-icon">
             <svg viewBox="0 0 24 24">
-              <rect x="3" y="4" width="18" height="18" rx="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
             </svg>
           </div>
-          <span className="modal-section-title">{event.title}</span>
+          <span className="modal-section-title">{event.candidate}</span>
         </div>
 
-        {/* Status */}
-        <div className="modal-status-row">
-          <span
-            className="modal-detail-label"
-            style={{
-              fontSize: 12.5,
-              fontWeight: 700,
-              color: "#94a3b8",
-              textTransform: "uppercase",
-              letterSpacing: 0.4,
-            }}
-          >
-            Status
-          </span>
-          <span className={`badge ${event.status}`}>
-            <span className="badge-dot" />
-            {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
-          </span>
-        </div>
-
-        {/* Details */}
-        {[
-          {
-            icon: (
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="#1d4ed8"
-                strokeWidth="2"
-                strokeLinecap="round"
-              >
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            ),
-            bg: "#eff6ff",
-            label: "Candidate",
-            value: event.candidate,
-          },
-          {
-            icon: (
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="#7c3aed"
-                strokeWidth="2"
-                strokeLinecap="round"
-              >
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-            ),
-            bg: "#f5f3ff",
-            label: "Interviewer",
-            value: event.interviewer,
-          },
-          {
-            icon: (
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="#0369a1"
-                strokeWidth="2"
-                strokeLinecap="round"
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-            ),
-            bg: "#e0f2fe",
-            label: "Date",
-            value: dateStr,
-          },
-          {
-            icon: (
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="#0369a1"
-                strokeWidth="2"
-                strokeLinecap="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-            ),
-            bg: "#e0f2fe",
-            label: "Time",
-            value: `${fmt(event.start)} – ${fmt(event.end)}`,
-          },
-          {
-            icon: (
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="#0f766e"
-                strokeWidth="2"
-                strokeLinecap="round"
-              >
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-            ),
-            bg: "#f0fdfa",
-            label: "Location",
-            value: event.room,
-          },
-        ].map(({ icon, bg, label, value }) => (
-          <div className="modal-detail-row" key={label}>
-            <div className="modal-detail-icon" style={{ background: bg }}>
-              {icon}
-            </div>
-            <div>
-              <div className="modal-detail-label">{label}</div>
-              <div className="modal-detail-value">{value}</div>
-            </div>
-          </div>
-        ))}
-
-        {/* Admin actions */}
-        {user?.role === "admin" && event.status === "pending" && (
-          <div className="modal-admin-actions">
-            <button
-              className="btn-approve"
-              onClick={() => {
-                onApprove(event);
-                onClose();
+        {/* Candidate Image */}
+        {event.image && (
+          <div style={{ marginBottom: "20px", textAlign: "center" }}>
+            <img
+              src={event.image}
+              alt={event.candidate}
+              style={{
+                maxWidth: "150px",
+                maxHeight: "150px",
+                borderRadius: "8px",
+                objectFit: "cover",
               }}
-            >
-              ✓ Approve
-            </button>
-            <button
-              className="btn-reject"
-              onClick={() => {
-                onReject(event);
-                onClose();
-              }}
-            >
-              ✕ Reject
-            </button>
+            />
           </div>
         )}
+
+        {/* Time Display */}
+        <div className="modal-detail-row">
+          <div className="modal-detail-icon" style={{ background: "#e0f2fe" }}>
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="#0369a1"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          </div>
+          <div>
+            <div className="modal-detail-label">Time</div>
+            <div className="modal-detail-value">
+              {fmt(event.start)} – {fmt(event.end)}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {user?.role !== "admin" && (
-        <div className="modal-footer">
-          <button className="btn-cancel" onClick={onClose}>
-            Close
+      <div className="modal-footer">
+        {user?.role === "admin" && (
+          <button
+            className="btn-delete"
+            onClick={() => {
+              if (
+                window.confirm(`Delete appointment for ${event.candidate}?`)
+              ) {
+                onDelete && onDelete(event);
+                onClose();
+              }
+            }}
+          >
+            🗑️ Delete
           </button>
-        </div>
-      )}
+        )}
+        <div style={{ flex: 1 }} />
+        <button className="btn-cancel" onClick={onClose}>
+          Cancel
+        </button>
+      </div>
     </ModalChrome>
   );
 }

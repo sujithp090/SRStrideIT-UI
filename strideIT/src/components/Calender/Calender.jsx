@@ -1,11 +1,14 @@
 import { useState } from "react";
-import "./Calender.css";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-const HOURS = Array.from({ length: 12 }, (_, i) => {
-  const h = i + 8; // 8 AM → 7 PM
-  if (h === 12) return "12:00 PM";
-  return h < 12 ? `${h}:00 AM` : `${h - 12}:00 PM`;
+const HOURS = Array.from({ length: 24 }, (_, i) => {
+  const totalMinutes = 8 * 60 + i * 30; // Start at 8 AM, increment by 30 minutes
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 12) return "12:00 PM";
+  const period = hours < 12 ? "AM" : "PM";
+  const displayHours = hours < 12 ? hours : hours - 12;
+  return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
 });
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -42,68 +45,7 @@ function isSameDay(a, b) {
   );
 }
 
-// ── Sample events ─────────────────────────────────────────────────────────────
-// dayOffset is relative to today (0 = today, 1 = tomorrow, -1 = yesterday)
-function buildSampleEvents(today) {
-  const mkDate = (offset, h, m = 0) => {
-    const d = new Date(today);
-    d.setDate(d.getDate() + offset);
-    d.setHours(h, m, 0, 0);
-    return d;
-  };
-  return [
-    {
-      id: 1,
-      title: "Frontend Interview",
-      candidate: "Alice Johnson",
-      status: "pending",
-      start: mkDate(-1, 10),
-      end: mkDate(-1, 11),
-      interviewer: "Bob Smith",
-      room: "Room A",
-    },
-    {
-      id: 2,
-      title: "Backend Interview",
-      candidate: "Carlos Lee",
-      status: "confirmed",
-      start: mkDate(0, 14),
-      end: mkDate(0, 15),
-      interviewer: "Diana Prince",
-      room: "Room B",
-    },
-    {
-      id: 3,
-      title: "Design Review",
-      candidate: "Emily Wang",
-      status: "approved",
-      start: mkDate(1, 11),
-      end: mkDate(1, 12, 30),
-      interviewer: "Frank Miller",
-      room: "Room C",
-    },
-    {
-      id: 4,
-      title: "HR Screening",
-      candidate: "Grace Kim",
-      status: "pending",
-      start: mkDate(2, 9),
-      end: mkDate(2, 9, 30),
-      interviewer: "Henry Ford",
-      room: "Zoom",
-    },
-    {
-      id: 5,
-      title: "Technical Round",
-      candidate: "Ivan Petrov",
-      status: "confirmed",
-      start: mkDate(3, 16),
-      end: mkDate(3, 17, 30),
-      interviewer: "Julia Chen",
-      room: "Room D",
-    },
-  ];
-}
+// ── Events are now managed via state in App.jsx ─────────────────────────────
 
 // ── CalendarView ─────────────────────────────────────────────────────────────
 export default function CalendarView({
@@ -111,14 +53,17 @@ export default function CalendarView({
   onLogout,
   onRequestClick,
   onEventClick,
+  events = [],
 }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const [anchor, setAnchor] = useState(new Date(today));
   const [view, setView] = useState("Week");
-  const events = buildSampleEvents(today);
   const weekDays = getWeekDays(anchor);
+
+  // Day view: single day
+  const getDayToDisplay = () => anchor;
 
   const prevWeek = () => {
     const d = new Date(anchor);
@@ -130,24 +75,158 @@ export default function CalendarView({
     d.setDate(d.getDate() + 7);
     setAnchor(d);
   };
+
+  const prevDay = () => {
+    const d = new Date(anchor);
+    d.setDate(d.getDate() - 1);
+    setAnchor(d);
+  };
+  const nextDay = () => {
+    const d = new Date(anchor);
+    d.setDate(d.getDate() + 1);
+    setAnchor(d);
+  };
+
+  const prevMonth = () => {
+    const d = new Date(anchor);
+    d.setMonth(d.getMonth() - 1);
+    setAnchor(d);
+  };
+  const nextMonth = () => {
+    const d = new Date(anchor);
+    d.setMonth(d.getMonth() + 1);
+    setAnchor(d);
+  };
+
   const goToday = () => setAnchor(new Date(today));
 
-  // Events for a given day + hour cell
+  const handleCellClick = (day, hourIdx) => {
+    const totalMinutes = 8 * 60 + hourIdx * 30;
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    const slotDate = new Date(day);
+    slotDate.setHours(hours, minutes, 0, 0);
+    onRequestClick(slotDate);
+  };
+
+  // Navigation based on view
+  const handlePrev = () => {
+    if (view === "Week") prevWeek();
+    else if (view === "Month") prevMonth();
+  };
+  const handleNext = () => {
+    if (view === "Week") nextWeek();
+    else if (view === "Month") nextMonth();
+  };
+
+  // Events for a given day + 30-minute cell
+  // Returns events that start or occur during this 30-minute slot
   const getEvents = (day, hourIdx) => {
-    const cellHour = hourIdx + 8; // 8 AM base
+    const totalMinutes = 8 * 60 + hourIdx * 30;
+    const startHours = Math.floor(totalMinutes / 60);
+    const startMins = totalMinutes % 60;
+    const cellStart = new Date(day);
+    cellStart.setHours(startHours, startMins, 0, 0);
+    const cellEnd = new Date(cellStart);
+    cellEnd.setMinutes(cellEnd.getMinutes() + 30);
+
     return events.filter((ev) => {
       if (!isSameDay(ev.start, day)) return false;
-      return ev.start.getHours() === cellHour;
+      // Event overlaps with this 30-minute cell
+      return ev.start < cellEnd && ev.end > cellStart;
     });
+  };
+
+  // Calculate the top position of an event within its cell
+  const eventTopPosition = (ev, hourIdx) => {
+    const totalMinutes = 8 * 60 + hourIdx * 30;
+    const cellStartMinutes = totalMinutes;
+    const eventStartMinutes = ev.start.getHours() * 60 + ev.start.getMinutes();
+    const minuteOffset = eventStartMinutes - cellStartMinutes;
+
+    // Position is proportional to minutes: (minutes / 30) * cellHeight
+    // Cell height is 40px for 30 minutes, so each minute is ~1.33px
+    return (minuteOffset / 30) * 40;
   };
 
   const eventHeightPx = (ev) => {
     const mins = (ev.end - ev.start) / 60000;
-    return Math.max(36, (mins / 60) * 60 - 4);
+    // Each 30 minutes is 40px
+    const height = (mins / 30) * 40;
+    return Math.max(38, height);
+  };
+
+  // Check if event starts in this cell
+  const eventStartsInCell = (ev, hourIdx, day) => {
+    const totalMinutes = 8 * 60 + hourIdx * 30;
+    const startHours = Math.floor(totalMinutes / 60);
+    const startMins = totalMinutes % 60;
+    const cellStart = new Date(day);
+    cellStart.setHours(startHours, startMins, 0, 0);
+    const cellEnd = new Date(cellStart);
+    cellEnd.setMinutes(cellEnd.getMinutes() + 30);
+
+    // Check if event starts within this cell
+    return ev.start >= cellStart && ev.start < cellEnd;
+  };
+
+  // Check if two events should be merged
+  const shouldMerge = (ev1, ev2) => {
+    return (
+      ev1.candidate === ev2.candidate &&
+      ev1.company === ev2.company &&
+      ev1.round === ev2.round
+    );
+  };
+
+  // Find merged event end time (for consecutive matching events)
+  const getMergedEventEnd = (ev, day, startingHourIdx) => {
+    let mergedEnd = ev.end;
+    let currentEnd = ev.end;
+    let currentHourIdx = startingHourIdx;
+
+    // Keep checking next cells for matching events
+    while (currentHourIdx < 24) {
+      currentHourIdx++;
+      if (currentHourIdx >= 24) break;
+
+      const nextCellEvents = getEvents(day, currentHourIdx);
+      const matchingEvent = nextCellEvents.find(
+        (nextEv) =>
+          nextEv.start.getTime() === currentEnd.getTime() &&
+          shouldMerge(ev, nextEv),
+      );
+
+      if (matchingEvent) {
+        mergedEnd = matchingEvent.end;
+        currentEnd = matchingEvent.end;
+      } else {
+        break;
+      }
+    }
+
+    return mergedEnd;
   };
 
   // Pending count for navbar badge
   const pendingCount = events.filter((e) => e.status === "pending").length;
+
+  // Determine days to display
+  let daysToDisplay = [];
+  if (view === "Week") {
+    daysToDisplay = weekDays;
+  } else if (view === "Month") {
+    const firstDay = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+    const lastDay = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+    const start = new Date(firstDay);
+    start.setDate(firstDay.getDate() - firstDay.getDay());
+    daysToDisplay = [];
+    let current = new Date(start);
+    while (current <= lastDay || current.getDay() !== 0) {
+      daysToDisplay.push(new Date(current));
+      current.setDate(current.getDate() + 1);
+    }
+  }
 
   return (
     <div className="cal-root">
@@ -202,26 +281,6 @@ export default function CalendarView({
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
           </button>
-          <button className="cal-sidebar-btn" title="Requests">
-            <svg viewBox="0 0 24 24">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14,2 14,8 20,8" />
-            </svg>
-          </button>
-          <button className="cal-sidebar-btn" title="People">
-            <svg viewBox="0 0 24 24">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-          </button>
-          <button className="cal-sidebar-btn" title="Settings">
-            <svg viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
-          </button>
         </div>
 
         {/* ── Main ── */}
@@ -230,8 +289,8 @@ export default function CalendarView({
           <div className="cal-header">
             <button
               className="cal-nav-btn"
-              onClick={prevWeek}
-              title="Previous week"
+              onClick={handlePrev}
+              title="Previous"
             >
               <svg
                 width="14"
@@ -245,11 +304,7 @@ export default function CalendarView({
                 <polyline points="15 18 9 12 15 6" />
               </svg>
             </button>
-            <button
-              className="cal-nav-btn"
-              onClick={nextWeek}
-              title="Next week"
-            >
+            <button className="cal-nav-btn" onClick={handleNext} title="Next">
               <svg
                 width="14"
                 height="14"
@@ -264,14 +319,25 @@ export default function CalendarView({
             </button>
 
             <span className="cal-header-month">
-              {MONTH_NAMES[weekDays[0].getMonth()]}
-              {weekDays[0].getMonth() !== weekDays[6].getMonth() &&
-                ` – ${MONTH_NAMES[weekDays[6].getMonth()]}`}
+              {view === "Month"
+                ? MONTH_NAMES[anchor.getMonth()]
+                : MONTH_NAMES[daysToDisplay[0].getMonth()]}
+              {view === "Month" && ` ${anchor.getFullYear()}`}
+              {view !== "Month" &&
+                daysToDisplay[0].getMonth() !==
+                  daysToDisplay[daysToDisplay.length - 1].getMonth() &&
+                ` – ${
+                  MONTH_NAMES[
+                    daysToDisplay[daysToDisplay.length - 1].getMonth()
+                  ]
+                }`}
             </span>
-            <span className="cal-header-year">{weekDays[0].getFullYear()}</span>
+            <span className="cal-header-year">
+              {view !== "Month" && daysToDisplay[0].getFullYear()}
+            </span>
 
             <div className="cal-view-tabs">
-              {["Day", "Week", "Month"].map((v) => (
+              {["Week", "Month"].map((v) => (
                 <button
                   key={v}
                   className={`cal-view-tab ${view === v ? "active" : ""}`}
@@ -286,81 +352,122 @@ export default function CalendarView({
             <button className="cal-today-btn" onClick={goToday}>
               Today
             </button>
-            <button className="cal-request-btn" onClick={onRequestClick}>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              Request
-            </button>
           </div>
 
-          {/* Day-of-week header */}
-          <div className="cal-days-header">
-            <div />
-            {weekDays.map((day, i) => (
-              <div
-                key={i}
-                className={`cal-day-label ${
-                  isSameDay(day, today) ? "today" : ""
-                }`}
-              >
-                {DAY_NAMES[day.getDay()]} {day.getDate()}
-              </div>
-            ))}
-          </div>
-
-          {/* Time grid */}
+          {/* Days grid (Y-axis) with time slots (X-axis) */}
           <div className="cal-grid-scroll">
-            <div className="cal-grid">
-              {HOURS.map((hour, hi) => (
-                <>
-                  <div key={`label-${hi}`} className="cal-time-label">
-                    {hour}
-                  </div>
-                  {weekDays.map((day, di) => {
-                    const cellEvents = getEvents(day, hi);
-                    return (
-                      <div
-                        key={`cell-${hi}-${di}`}
-                        className={`cal-cell ${
-                          isSameDay(day, today) ? "today-col" : ""
-                        }`}
-                      >
-                        {cellEvents.map((ev) => (
-                          <div
-                            key={ev.id}
-                            className={`cal-event ${ev.status}`}
-                            style={{ top: 2, height: eventHeightPx(ev) }}
-                            onClick={() => onEventClick && onEventClick(ev)}
-                          >
-                            <div className="cal-event-title">{ev.title}</div>
-                            <div className="cal-event-time">
-                              {ev.start.toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}{" "}
-                              –{" "}
-                              {ev.end.toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })}
-                </>
+            {/* Time header (X-axis) - inside scroll container */}
+            <div className="cal-times-header">
+              <div className="cal-times-header-corner" />
+              {HOURS.map((hour, i) => (
+                <div key={i} className="cal-time-header-cell">
+                  {hour}
+                </div>
               ))}
+            </div>
+
+            <div className="cal-grid-vertical">
+              {daysToDisplay.map((day, dayIdx) => {
+                const isCurrentMonth =
+                  view !== "Month" || day.getMonth() === anchor.getMonth();
+                const isToday = isSameDay(day, today);
+
+                return (
+                  <div
+                    key={dayIdx}
+                    className={`cal-day-row ${
+                      !isCurrentMonth ? "other-month" : ""
+                    }`}
+                  >
+                    {/* Day label (Y-axis) */}
+                    <div
+                      className={`cal-day-row-header ${isToday ? "today" : ""}`}
+                    >
+                      <div className="cal-day-row-name">
+                        {DAY_NAMES[day.getDay()]}
+                      </div>
+                      <div className="cal-day-row-date">{day.getDate()}</div>
+                    </div>
+
+                    {/* Time slots for this day (X-axis) */}
+                    {HOURS.map((hour, hourIdx) => {
+                      const cellEvents = getEvents(day, hourIdx);
+                      // Only render events that start in this cell to avoid duplicates
+                      const eventsStartingHere = cellEvents.filter((ev) =>
+                        eventStartsInCell(ev, hourIdx, day),
+                      );
+
+                      return (
+                        <div
+                          key={`cell-${dayIdx}-${hourIdx}`}
+                          className={`cal-cell ${isToday ? "today-row" : ""}`}
+                          onClick={() => handleCellClick(day, hourIdx)}
+                        >
+                          {eventsStartingHere.map((ev) => {
+                            let roundClass = "pending";
+                            if (ev.round === "L1") roundClass = "round-l1";
+                            else if (ev.round === "L2") roundClass = "round-l2";
+                            else if (ev.round === "Client round")
+                              roundClass = "round-client";
+                            else if (
+                              ev.round === "Custom" ||
+                              (ev.round &&
+                                ev.round !== "L1" &&
+                                ev.round !== "L2" &&
+                                ev.round !== "Client round")
+                            )
+                              roundClass = "round-custom";
+
+                            // Get merged end time for adjacent matching events
+                            const mergedEnd = getMergedEventEnd(
+                              ev,
+                              day,
+                              hourIdx,
+                            );
+
+                            // Compute how many 30-min cells this event spans horizontally
+                            const spanCells = Math.max(
+                              1,
+                              Math.round((mergedEnd - ev.start) / (30 * 60000)),
+                            );
+
+                            return (
+                              <div
+                                key={ev.id}
+                                className={`cal-event ${roundClass} ${
+                                  spanCells > 1 ? "spanning" : ""
+                                }`}
+                                style={{
+                                  width: `calc(${spanCells * 100}% + ${spanCells - 1}px)`,
+                                }}
+                                onClick={() => onEventClick && onEventClick(ev)}
+                              >
+                                <div className="cal-event-title">
+                                  {ev.candidate}
+                                </div>
+                                <div className="cal-event-company">
+                                  {ev.company}
+                                </div>
+                                <div className="cal-event-time">
+                                  {ev.start.toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}{" "}
+                                  –{" "}
+                                  {mergedEnd.toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
