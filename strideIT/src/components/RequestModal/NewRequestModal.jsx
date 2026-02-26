@@ -67,6 +67,8 @@ export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
   const [file, setFile] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [conflictError, setConflictError] = useState("");
   const fileRef = useRef();
 
   const handleFile = (f) => f && setFile(f);
@@ -76,23 +78,33 @@ export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
     handleFile(e.dataTransfer.files[0]);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!candidate || !date || !company || !startTime || !endTime) return;
+    setConflictError("");
+    setSubmitting(true);
+
+    const result = await onSubmit({
+      candidate,
+      company,
+      round: round === "Custom" ? customRound : round,
+      date,
+      startTime,
+      endTime,
+      image: file ? URL.createObjectURL(file) : null,
+      status: "pending",
+      title: `Interview - ${candidate}`,
+      start: new Date(`${date}T${startTime}`),
+      end: new Date(`${date}T${endTime}`),
+    });
+
+    setSubmitting(false);
+
+    if (result?.error) {
+      setConflictError(result.error);
+      return;
+    }
+
     setSubmitted(true);
-    onSubmit &&
-      onSubmit({
-        candidate,
-        company,
-        round: round === "Custom" ? customRound : round,
-        date,
-        startTime,
-        endTime,
-        image: file ? URL.createObjectURL(file) : null,
-        status: "pending",
-        title: `Interview - ${candidate}`,
-        start: new Date(`${date}T${startTime}`),
-        end: new Date(`${date}T${endTime}`),
-      });
   };
 
   const roundColor =
@@ -129,59 +141,46 @@ export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
   return (
     <ModalChrome onClose={onClose}>
       <style>{`
-        .modal-input-wrap {
-          position: relative;
-          display: block;
-        }
-        .modal-input-wrap .modal-input {
-          width: 100%;
-          padding-right: 36px;
-        }
-        /* hide native date/time picker icons */
+        .modal-input-wrap { position: relative; display: block; }
+        .modal-input-wrap .modal-input { width: 100%; padding-right: 36px; }
         .modal-input-wrap .modal-input[type="date"]::-webkit-calendar-picker-indicator,
         .modal-input-wrap .modal-input[type="time"]::-webkit-calendar-picker-indicator {
-          opacity: 0;
-          position: absolute;
-          right: 0;
-          width: 36px;
-          height: 100%;
-          cursor: pointer;
+          opacity: 0; position: absolute; right: 0; width: 36px; height: 100%; cursor: pointer;
         }
-        /* static icon (calendar) */
         .modal-input-icon {
-          position: absolute;
-          right: 10px;
-          top: 50%;
-          transform: translateY(-50%);
-          display: flex;
-          align-items: center;
-          pointer-events: none;
+          position: absolute; right: 10px; top: 50%;
+          transform: translateY(-50%); display: flex; align-items: center; pointer-events: none;
         }
-        /* kill native select arrow on ALL browsers */
         .modal-select {
-          appearance: none;
-          -webkit-appearance: none;
-          -moz-appearance: none;
-          padding-right: 36px;
-          border-left: 4px solid var(--round-color, #3b82f6);
-          cursor: pointer;
-          width: 100%;
+          appearance: none; -webkit-appearance: none; -moz-appearance: none;
+          padding-right: 36px; border-left: 4px solid var(--round-color, #3b82f6);
+          cursor: pointer; width: 100%;
         }
-        /* chevron — rotates around its own centre */
         .modal-chevron {
-          position: absolute;
-          right: 10px;
-          top: 50%;
+          position: absolute; right: 10px; top: 50%;
           transform: translateY(-50%) rotate(0deg);
           transform-origin: 50% 50%;
           transition: transform 0.2s ease;
-          display: flex;
-          align-items: center;
-          pointer-events: none;
+          display: flex; align-items: center; pointer-events: none;
         }
         .modal-input-wrap.open .modal-chevron {
           transform: translateY(-50%) rotate(180deg);
         }
+        .modal-conflict-error {
+          background: #fef2f2;
+          border: 1.5px solid #fca5a5;
+          border-radius: 10px;
+          padding: 12px 14px;
+          margin: 0 0 14px 0;
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          font-size: 13px;
+          color: #dc2626;
+          font-family: Poppins, sans-serif;
+          line-height: 1.5;
+        }
+        .modal-conflict-error svg { flex-shrink: 0; margin-top: 1px; }
       `}</style>
 
       <div className="modal-body">
@@ -204,6 +203,26 @@ export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
             </svg>
           </button>
         </div>
+
+        {/* ── Conflict / time error banner ── */}
+        {conflictError && (
+          <div className="modal-conflict-error">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#dc2626"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span>{conflictError}</span>
+          </div>
+        )}
 
         {!file ? (
           <div
@@ -272,13 +291,15 @@ export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
         <div className="modal-input-row">
           <div className="modal-field">
             <label className="modal-label">Date *</label>
-            {/* Date gets a static calendar icon — no chevron, it doesn't "open/close" */}
             <div className="modal-input-wrap">
               <input
                 type="date"
                 className="modal-input"
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
+                onChange={(e) => {
+                  setDate(e.target.value);
+                  setConflictError("");
+                }}
                 required
               />
               <span className="modal-input-icon">
@@ -294,7 +315,10 @@ export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
                 className="modal-input"
                 value={startTime}
                 step="1800"
-                onChange={(e) => setStart(e.target.value)}
+                onChange={(e) => {
+                  setStart(e.target.value);
+                  setConflictError("");
+                }}
                 required
                 onFocus={() => setStartOpen(true)}
                 onBlur={() => setStartOpen(false)}
@@ -316,7 +340,10 @@ export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
                 className="modal-input"
                 value={endTime}
                 step="1800"
-                onChange={(e) => setEnd(e.target.value)}
+                onChange={(e) => {
+                  setEnd(e.target.value);
+                  setConflictError("");
+                }}
                 required
                 onFocus={() => setEndOpen(true)}
                 onBlur={() => setEndOpen(false)}
@@ -398,6 +425,7 @@ export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
           className="btn-submit"
           onClick={handleSubmit}
           disabled={
+            submitting ||
             !candidate ||
             !date ||
             !startTime ||
@@ -406,7 +434,7 @@ export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
             (round === "Custom" && !customRound)
           }
         >
-          Submit Request
+          {submitting ? "Checking..." : "Submit Request"}
         </button>
       </div>
     </ModalChrome>

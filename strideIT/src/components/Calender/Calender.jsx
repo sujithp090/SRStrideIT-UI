@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { PendingRequestsModal } from "../RequestModal/RequestModal";
 import UsersPanel from "../Users/UsersPanel";
 
-const HOURS = Array.from({ length: 24 }, (_, i) => {
-  const totalMinutes = 8 * 60 + i * 30;
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  const period = hours < 12 ? "AM" : "PM";
-  const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-  return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+const SLOT_COUNT = 26;
+const GRID_START = 8 * 60; // 8:00 AM in minutes
+
+const HOURS = Array.from({ length: SLOT_COUNT }, (_, i) => {
+  const totalMinutes = GRID_START + i * 30;
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  const period = h < 12 ? "AM" : "PM";
+  const display = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${display}:${m.toString().padStart(2, "0")} ${period}`;
 });
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -26,6 +29,7 @@ const MONTH_NAMES = [
   "November",
   "December",
 ];
+const CELL_WIDTH = 90;
 
 function getWeekDays(anchor) {
   const start = new Date(anchor);
@@ -45,6 +49,13 @@ function isSameDay(a, b) {
   );
 }
 
+// Convert a Date's local time to pixel offset from left edge of the time grid
+function dateToPixel(date, cw) {
+  const minutesFromMidnight = date.getHours() * 60 + date.getMinutes();
+  const slotsFromStart = (minutesFromMidnight - GRID_START) / 30;
+  return slotsFromStart * cw;
+}
+
 export default function CalendarView({
   user,
   onLogout,
@@ -60,83 +71,31 @@ export default function CalendarView({
   const [view, setView] = useState("Week");
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [showUsersPanel, setShowUsersPanel] = useState(false);
-  const [activeNav, setActiveNav] = useState("calendar"); // "calendar" | "settings"
+  const [activeNav, setActiveNav] = useState("calendar");
+  const [cellWidth, setCellWidth] = useState(CELL_WIDTH);
+  const cellRef = useRef(null);
+
+  // Measure actual rendered cell width after mount
+  useEffect(() => {
+    if (cellRef.current) {
+      const w = cellRef.current.getBoundingClientRect().width;
+      if (w > 0) setCellWidth(w);
+    }
+  }, []);
+
   const weekDays = getWeekDays(anchor);
 
-  const prevWeek = () => {
-    const d = new Date(anchor);
-    d.setDate(d.getDate() - 7);
-    setAnchor(d);
-  };
-  const nextWeek = () => {
-    const d = new Date(anchor);
-    d.setDate(d.getDate() + 7);
-    setAnchor(d);
-  };
-  const prevMonth = () => {
-    const d = new Date(anchor);
-    d.setMonth(d.getMonth() - 1);
-    setAnchor(d);
-  };
-  const nextMonth = () => {
-    const d = new Date(anchor);
-    d.setMonth(d.getMonth() + 1);
-    setAnchor(d);
-  };
-
   const handlePrev = () => {
-    if (view === "Week") prevWeek();
-    else prevMonth();
+    const d = new Date(anchor);
+    if (view === "Week") d.setDate(d.getDate() - 7);
+    else d.setMonth(d.getMonth() - 1);
+    setAnchor(d);
   };
   const handleNext = () => {
-    if (view === "Week") nextWeek();
-    else nextMonth();
-  };
-
-  const getEvents = (day, hourIdx) => {
-    const totalMinutes = 8 * 60 + hourIdx * 30;
-    const cellStart = new Date(day);
-    cellStart.setHours(Math.floor(totalMinutes / 60), totalMinutes % 60, 0, 0);
-    const cellEnd = new Date(cellStart);
-    cellEnd.setMinutes(cellEnd.getMinutes() + 30);
-    return events.filter(
-      (ev) =>
-        isSameDay(ev.start, day) && ev.start < cellEnd && ev.end > cellStart,
-    );
-  };
-
-  const eventStartsInCell = (ev, hourIdx, day) => {
-    const totalMinutes = 8 * 60 + hourIdx * 30;
-    const cellStart = new Date(day);
-    cellStart.setHours(Math.floor(totalMinutes / 60), totalMinutes % 60, 0, 0);
-    const cellEnd = new Date(cellStart);
-    cellEnd.setMinutes(cellEnd.getMinutes() + 30);
-    return ev.start >= cellStart && ev.start < cellEnd;
-  };
-
-  const shouldMerge = (ev1, ev2) =>
-    ev1.candidate === ev2.candidate &&
-    ev1.company === ev2.company &&
-    ev1.round === ev2.round;
-
-  const getMergedEventEnd = (ev, day, startingHourIdx) => {
-    let mergedEnd = ev.end;
-    let currentEnd = ev.end;
-    let currentHourIdx = startingHourIdx;
-    while (currentHourIdx < HOURS.length) {
-      currentHourIdx++;
-      if (currentHourIdx >= HOURS.length) break;
-      const matchingEvent = getEvents(day, currentHourIdx).find(
-        (nextEv) =>
-          nextEv.start.getTime() === currentEnd.getTime() &&
-          shouldMerge(ev, nextEv),
-      );
-      if (matchingEvent) {
-        mergedEnd = matchingEvent.end;
-        currentEnd = matchingEvent.end;
-      } else break;
-    }
-    return mergedEnd;
+    const d = new Date(anchor);
+    if (view === "Week") d.setDate(d.getDate() + 7);
+    else d.setMonth(d.getMonth() + 1);
+    setAnchor(d);
   };
 
   const pendingCount = events.filter((e) => e.status === "pending").length;
@@ -156,6 +115,8 @@ export default function CalendarView({
     }
   }
 
+  const totalGridWidth = SLOT_COUNT * cellWidth;
+
   return (
     <div className="cal-root">
       {/* ── Navbar ── */}
@@ -173,7 +134,7 @@ export default function CalendarView({
               <circle cx="12" cy="7" r="4" />
             </svg>
           </div>
-          <span className="cal-navbar-title">Interview Approval App</span>
+          <span className="cal-navbar-title">SR Stride IT</span>
         </div>
         <div className="cal-navbar-spacer" />
         <button
@@ -211,7 +172,6 @@ export default function CalendarView({
       <div className="cal-shell">
         {/* ── Sidebar ── */}
         <div className="cal-sidebar">
-          {/* Calendar icon */}
           <button
             className={`cal-sidebar-btn ${activeNav === "calendar" ? "active" : ""}`}
             title="Calendar"
@@ -227,8 +187,6 @@ export default function CalendarView({
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
           </button>
-
-          {/* Settings / Users icon — admin only */}
           {user?.role === "admin" && (
             <button
               className={`cal-sidebar-btn ${activeNav === "settings" ? "active" : ""}`}
@@ -307,154 +265,216 @@ export default function CalendarView({
           </div>
 
           <div className="cal-grid-scroll">
+            {/* ── Time header ── */}
             <div className="cal-times-header">
+              {/* Sticky day-label corner */}
               <div
                 className="cal-times-header-corner"
                 style={{ width: 120, minWidth: 120 }}
               />
-              {HOURS.map((hour, i) => (
-                <div key={i} className="cal-time-header-cell">
-                  {hour}
-                </div>
-              ))}
+              {/* Time labels — fixed width matching CELL_WIDTH */}
+              <div style={{ display: "flex", flexShrink: 0 }}>
+                {HOURS.map((hour, i) => (
+                  <div
+                    key={i}
+                    ref={i === 0 ? cellRef : null}
+                    className="cal-time-header-cell"
+                    style={{
+                      width: CELL_WIDTH,
+                      minWidth: CELL_WIDTH,
+                      maxWidth: CELL_WIDTH,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {hour}
+                  </div>
+                ))}
+              </div>
             </div>
 
+            {/* ── Day rows ── */}
             <div className="cal-grid-vertical">
               {daysToDisplay.map((day, dayIdx) => {
                 const isCurrentMonth =
                   view !== "Month" || day.getMonth() === anchor.getMonth();
                 const isToday = isSameDay(day, today);
+                const dayEvents = events.filter(
+                  (ev) => isSameDay(ev.start, day) && ev.status !== "rejected",
+                );
+
                 return (
                   <div
                     key={dayIdx}
                     className={`cal-day-row ${!isCurrentMonth ? "other-month" : ""}`}
-                    style={{
-                      gridTemplateColumns: `120px repeat(${HOURS.length}, 1fr)`,
-                    }}
+                    style={{ display: "flex", minHeight: 56 }}
                   >
+                    {/* Sticky day label */}
                     <div
                       className={`cal-day-row-header ${isToday ? "today" : ""}`}
+                      style={{ width: 120, minWidth: 120, flexShrink: 0 }}
                     >
                       <div className="cal-day-row-name">
                         {DAY_NAMES[day.getDay()]}
                       </div>
                       <div className="cal-day-row-date">{day.getDate()}</div>
                     </div>
-                    {HOURS.map((hour, hourIdx) => {
-                      const eventsStartingHere = getEvents(day, hourIdx).filter(
-                        (ev) => eventStartsInCell(ev, hourIdx, day),
-                      );
-                      return (
-                        <div
-                          key={`cell-${dayIdx}-${hourIdx}`}
-                          className={`cal-cell ${isToday ? "today-row" : ""}`}
-                        >
-                          {eventsStartingHere.map((ev) => {
-                            let roundClass = "pending";
-                            if (ev.round === "L1") roundClass = "round-l1";
-                            else if (ev.round === "L2") roundClass = "round-l2";
-                            else if (ev.round === "Client round")
-                              roundClass = "round-client";
-                            else if (
-                              ev.round &&
-                              !["L1", "L2", "Client round"].includes(ev.round)
-                            )
-                              roundClass = "round-custom";
 
-                            const mergedEnd = getMergedEventEnd(
-                              ev,
-                              day,
-                              hourIdx,
-                            );
-                            const spanCells = Math.max(
-                              1,
-                              Math.round((mergedEnd - ev.start) / (30 * 60000)),
-                            );
+                    {/* Time grid area — relative container for absolute events */}
+                    <div
+                      style={{
+                        position: "relative",
+                        width: totalGridWidth,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {/* Background cell lines */}
+                      <div style={{ display: "flex", height: "100%" }}>
+                        {HOURS.map((_, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              width: CELL_WIDTH,
+                              minWidth: CELL_WIDTH,
+                              maxWidth: CELL_WIDTH,
+                              flexShrink: 0,
+                              borderRight: "1px solid #f1f5f9",
+                              height: "100%",
+                              background: isToday
+                                ? "rgba(219,234,254,0.15)"
+                                : "transparent",
+                            }}
+                          />
+                        ))}
+                      </div>
 
-                            return (
+                      {/* Events — absolutely positioned using pixel offset */}
+                      {dayEvents.map((ev) => {
+                        const leftPx = dateToPixel(ev.start, cellWidth);
+                        const widthPx = dateToPixel(ev.end, cellWidth) - leftPx;
+
+                        // Skip if outside visible range
+                        if (leftPx < 0 || leftPx >= totalGridWidth) return null;
+
+                        let roundClass = "pending";
+                        if (ev.round === "L1") roundClass = "round-l1";
+                        else if (ev.round === "L2") roundClass = "round-l2";
+                        else if (ev.round === "Client round")
+                          roundClass = "round-client";
+                        else if (ev.round) roundClass = "round-custom";
+
+                        return (
+                          <div
+                            key={ev.id}
+                            className={`cal-event ${roundClass}`}
+                            style={{
+                              position: "absolute",
+                              top: 2,
+                              bottom: 2,
+                              left: leftPx,
+                              width: Math.max(widthPx - 2, 40),
+                              overflow: "visible",
+                              zIndex: 2,
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEventClick && onEventClick(ev);
+                            }}
+                          >
+                            {ev.status === "approved" ? (
                               <div
-                                key={ev.id}
-                                className={`cal-event ${roundClass} ${spanCells > 1 ? "spanning" : ""}`}
                                 style={{
-                                  gridColumn: `${hourIdx + 2} / span ${spanCells}`,
+                                  position: "absolute",
+                                  top: 4,
+                                  right: 4,
+                                  width: 18,
+                                  height: 18,
+                                  backgroundColor: "#16a34a",
+                                  borderRadius: "50%",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  boxShadow: "0 1px 4px rgba(22,163,74,0.5)",
                                 }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onEventClick && onEventClick(ev);
-                                }}
+                                title="Approved"
                               >
-                                {!ev.image && (
-                                  <div
-                                    style={{
-                                      position: "absolute",
-                                      top: 4,
-                                      right: 4,
-                                      width: 16,
-                                      height: 16,
-                                      backgroundColor: "#fca5a5",
-                                      borderRadius: "50%",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                    }}
-                                    title="No image uploaded"
-                                  >
-                                    <svg
-                                      width="10"
-                                      height="10"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="#dc2626"
-                                      strokeWidth="3"
-                                      strokeLinecap="round"
-                                    >
-                                      <circle cx="12" cy="12" r="10" />
-                                      <line x1="12" y1="8" x2="12" y2="12" />
-                                      <line
-                                        x1="12"
-                                        y1="16"
-                                        x2="12.01"
-                                        y2="16"
-                                      />
-                                    </svg>
-                                  </div>
-                                )}
-                                <div className="cal-event-title">
-                                  {ev.candidate}
-                                </div>
-                                <div className="cal-event-company">
-                                  {ev.company}
-                                </div>
-                                <div className="cal-event-time">
-                                  {ev.start.toLocaleTimeString([], {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                  {" – "}
-                                  {mergedEnd.toLocaleTimeString([], {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </div>
-                                {ev.status === "pending" && (
-                                  <div
-                                    style={{
-                                      position: "absolute",
-                                      bottom: 0,
-                                      left: 0,
-                                      right: 0,
-                                      height: 4,
-                                      backgroundColor: "#9ca3af",
-                                      borderRadius: "0 0 4px 4px",
-                                    }}
-                                  />
-                                )}
+                                <svg
+                                  width="10"
+                                  height="10"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="white"
+                                  strokeWidth="3.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
                               </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })}
+                            ) : !ev.image ? (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  top: 4,
+                                  right: 4,
+                                  width: 16,
+                                  height: 16,
+                                  backgroundColor: "#fca5a5",
+                                  borderRadius: "50%",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                                title="No image uploaded"
+                              >
+                                <svg
+                                  width="10"
+                                  height="10"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="#dc2626"
+                                  strokeWidth="3"
+                                  strokeLinecap="round"
+                                >
+                                  <circle cx="12" cy="12" r="10" />
+                                  <line x1="12" y1="8" x2="12" y2="12" />
+                                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                                </svg>
+                              </div>
+                            ) : null}
+                            <div className="cal-event-title">
+                              {ev.candidate}
+                            </div>
+                            <div className="cal-event-company">
+                              {ev.company}
+                            </div>
+                            <div className="cal-event-time">
+                              {ev.start.toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                              {" – "}
+                              {ev.end.toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </div>
+                            {ev.status === "pending" && (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  bottom: 0,
+                                  left: 0,
+                                  right: 0,
+                                  height: 4,
+                                  backgroundColor: "#9ca3af",
+                                  borderRadius: "0 0 4px 4px",
+                                }}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })}
@@ -463,7 +483,6 @@ export default function CalendarView({
         </div>
       </div>
 
-      {/* ── Pending Modal ── */}
       {showPendingModal && (
         <PendingRequestsModal
           pendingEvents={events.filter((e) => e.status === "pending")}
@@ -491,7 +510,6 @@ export default function CalendarView({
         />
       )}
 
-      {/* ── Users Panel ── */}
       {showUsersPanel && (
         <UsersPanel
           onClose={() => {

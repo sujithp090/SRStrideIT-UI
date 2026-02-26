@@ -2,36 +2,59 @@ import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 
 export default function LoginScreen({ onLogin }) {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     setError("");
-    if (!email.trim() || !password) {
-      setError("Please enter your email and password.");
+    if (!username.trim() || !password) {
+      setError("Please enter your username and password.");
       return;
     }
     setLoading(true);
 
-    // 1. Sign in with Supabase Auth
-    const { data: authData, error: authError } =
-      await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      });
+    const input = username.trim().toLowerCase();
 
-    if (authError) {
-      setError("Invalid email or password.");
+    // 1. Resolve email from username via RPC (SECURITY DEFINER bypasses RLS)
+    const { data: rpcData, error: rpcError } = await supabase.rpc(
+      "get_email_by_username",
+      { p_username: input },
+    );
+
+    // Debug — remove after confirming login works
+    console.log("RPC raw data:", JSON.stringify(rpcData));
+    console.log("RPC error:", rpcError);
+
+    // Supabase can return scalar TEXT as a plain string OR wrapped in an array
+    let email = null;
+    if (typeof rpcData === "string") {
+      email = rpcData;
+    } else if (Array.isArray(rpcData) && rpcData.length > 0) {
+      email = rpcData[0]?.get_email_by_username ?? Object.values(rpcData[0])[0];
+    }
+
+    if (rpcError || !email) {
+      setError("No account found with that username.");
       setLoading(false);
       return;
     }
 
-    // 2. Fetch the user's profile to get name + role
+    // 2. Sign in with Supabase Auth using the resolved email
+    const { data: authData, error: authError } =
+      await supabase.auth.signInWithPassword({ email, password });
+
+    if (authError) {
+      setError("Invalid username or password.");
+      setLoading(false);
+      return;
+    }
+
+    // 3. Fetch full profile — RLS allows it now that user is authenticated
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("id, name, email, role")
+      .select("id, name, email, role, username")
       .eq("id", authData.user.id)
       .single();
 
@@ -66,7 +89,7 @@ export default function LoginScreen({ onLogin }) {
               <circle cx="12" cy="7" r="4" />
             </svg>
           </div>
-          <span className="login-app-name">Interview Approval App</span>
+          <span className="login-app-name">SR Stride IT</span>
         </div>
 
         <div className="login-title">Welcome back</div>
@@ -74,15 +97,17 @@ export default function LoginScreen({ onLogin }) {
         {error && <div className="login-error-msg">⚠ {error}</div>}
 
         <div className="login-field">
-          <label className="login-label">Email</label>
+          <label className="login-label">Username</label>
           <input
             className={`login-input ${error ? "error" : ""}`}
-            type="email"
-            placeholder="you@company.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            placeholder="your_username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={loading}
+            autoCapitalize="none"
+            autoCorrect="off"
           />
         </div>
 

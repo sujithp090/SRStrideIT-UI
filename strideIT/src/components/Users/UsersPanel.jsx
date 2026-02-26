@@ -7,7 +7,17 @@ export default function UsersPanel({ onClose }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
+  const [currentUserId, setCurrentUserId] = useState(null);
+
   useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) {
+        setCurrentUserId(data.user.id);
+      }
+    };
+
+    getCurrentUser();
     fetchUsers();
   }, []);
 
@@ -15,7 +25,7 @@ export default function UsersPanel({ onClose }) {
     setLoading(true);
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, name, email, role, created_at")
+      .select("id, name, email, role, username, created_at")
       .order("created_at", { ascending: false });
 
     if (!error) setUsers(data);
@@ -25,8 +35,6 @@ export default function UsersPanel({ onClose }) {
   const handleDelete = async () => {
     if (!deleteTarget) return;
 
-    // Delete from auth.users via admin API — requires service role
-    // Instead we soft-delete: remove from profiles and sign them out
     const { error } = await supabase
       .from("profiles")
       .delete()
@@ -297,6 +305,17 @@ export default function UsersPanel({ onClose }) {
                       {u.role.toUpperCase()}
                     </span>
                   </div>
+                  {/* Username badge */}
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "#3b82f6",
+                      fontWeight: 600,
+                      marginBottom: 1,
+                    }}
+                  >
+                    @{u.username || "—"}
+                  </div>
                   <div
                     style={{
                       fontSize: 12,
@@ -308,44 +327,43 @@ export default function UsersPanel({ onClose }) {
                   >
                     {u.email}
                   </div>
-                  <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
-                    Password: ••••••••
-                  </div>
                 </div>
 
                 {/* Delete */}
-                <button
-                  onClick={() => setDeleteTarget(u)}
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 8,
-                    flexShrink: 0,
-                    background: "#fee2e2",
-                    border: "1px solid #fecaca",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "background 0.15s",
-                  }}
-                  title="Delete user"
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#dc2626"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
+                {u.id !== currentUserId && (
+                  <button
+                    onClick={() => setDeleteTarget(u)}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      flexShrink: 0,
+                      background: "#fee2e2",
+                      border: "1px solid #fecaca",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "background 0.15s",
+                    }}
+                    title="Delete user"
                   >
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                    <path d="M10 11v6M14 11v6" />
-                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                  </svg>
-                </button>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#dc2626"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                      <path d="M10 11v6M14 11v6" />
+                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                    </svg>
+                  </button>
+                )}
               </div>
             ))
           )}
@@ -446,15 +464,24 @@ export default function UsersPanel({ onClose }) {
 // ── Add User Modal ─────────────────────────────────────────────────────────────
 function AddUserModal({ onClose, onCreated }) {
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("user");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Auto-suggest username from name as user types
+  const handleNameChange = (val) => {
+    setName(val);
+    if (!username) {
+      setUsername(val.trim().toLowerCase().replace(/\s+/g, "_"));
+    }
+  };
+
   const handleCreate = async () => {
     setError("");
-    if (!name.trim() || !email.trim() || !password) {
+    if (!name.trim() || !username.trim() || !email.trim() || !password) {
       setError("All fields are required.");
       return;
     }
@@ -462,11 +489,29 @@ function AddUserModal({ onClose, onCreated }) {
       setError("Password must be at least 6 characters.");
       return;
     }
+    if (!/^[a-z0-9_]+$/.test(username.trim())) {
+      setError(
+        "Username can only contain lowercase letters, numbers, and underscores.",
+      );
+      return;
+    }
+
     setLoading(true);
 
-    // Use Supabase Admin API via service role — but since we're on frontend
-    // we use signUp which creates the auth user, then our trigger creates the profile.
-    // We then update the role if admin.
+    // 1. Check if username is already taken
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("username", username.trim().toLowerCase())
+      .single();
+
+    if (existing) {
+      setError("That username is already taken. Please choose another.");
+      setLoading(false);
+      return;
+    }
+
+    // 2. Create auth user via signUp
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
@@ -481,12 +526,24 @@ function AddUserModal({ onClose, onCreated }) {
       return;
     }
 
-    // If role is admin, update the profile (trigger creates it as 'user' first)
-    if (role === "admin" && data.user) {
-      await supabase
+    // 3. Update the profile with username (and role if admin)
+    // The DB trigger creates the profile row; we update it with username + role
+    if (data.user) {
+      const updates = { username: username.trim().toLowerCase() };
+      if (role === "admin") updates.role = "admin";
+
+      const { error: updateError } = await supabase
         .from("profiles")
-        .update({ role: "admin" })
+        .update(updates)
         .eq("id", data.user.id);
+
+      if (updateError) {
+        setError(
+          "User created but failed to set username. Try updating manually.",
+        );
+        setLoading(false);
+        return;
+      }
     }
 
     setLoading(false);
@@ -566,78 +623,82 @@ function AddUserModal({ onClose, onCreated }) {
           </div>
         )}
 
-        {[
-          {
-            label: "Full Name",
-            value: name,
-            set: setName,
-            type: "text",
-            placeholder: "e.g. Jane Doe",
-          },
-          {
-            label: "Email",
-            value: email,
-            set: setEmail,
-            type: "email",
-            placeholder: "jane@company.com",
-          },
-          {
-            label: "Password",
-            value: password,
-            set: setPassword,
-            type: "password",
-            placeholder: "Min 6 characters",
-          },
-        ].map(({ label, value, set, type, placeholder }) => (
-          <div key={label} style={{ marginBottom: 14 }}>
-            <label
+        {/* Full Name */}
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelStyle}>Full Name *</label>
+          <input
+            type="text"
+            placeholder="e.g. Jane Doe"
+            value={name}
+            onChange={(e) => handleNameChange(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+
+        {/* Username */}
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelStyle}>Username *</label>
+          <div style={{ position: "relative" }}>
+            <span
               style={{
-                display: "block",
-                fontSize: 12,
+                position: "absolute",
+                left: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "#94a3b8",
+                fontSize: 13,
                 fontWeight: 600,
-                color: "#334155",
-                marginBottom: 5,
-                textTransform: "uppercase",
-                letterSpacing: 0.3,
+                pointerEvents: "none",
               }}
             >
-              {label} *
-            </label>
+              @
+            </span>
             <input
-              type={type}
-              placeholder={placeholder}
-              value={value}
-              onChange={(e) => set(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                borderRadius: 8,
-                border: "1.5px solid #e2e8f0",
-                fontSize: 13,
-                outline: "none",
-                fontFamily: "Poppins, sans-serif",
-                color: "#0f172a",
-                background: "#f8fafc",
-                boxSizing: "border-box",
-              }}
+              type="text"
+              placeholder="jane_doe"
+              value={username}
+              onChange={(e) =>
+                setUsername(
+                  e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""),
+                )
+              }
+              style={{ ...inputStyle, paddingLeft: 26 }}
+              autoCapitalize="none"
+              autoCorrect="off"
             />
           </div>
-        ))}
+          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
+            Lowercase letters, numbers, and underscores only. Used to log in.
+          </div>
+        </div>
 
+        {/* Email */}
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelStyle}>Email *</label>
+          <input
+            type="email"
+            placeholder="jane@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+
+        {/* Password */}
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelStyle}>Password *</label>
+          <input
+            type="password"
+            placeholder="Min 6 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+
+        {/* Role */}
         <div style={{ marginBottom: 20 }}>
-          <label
-            style={{
-              display: "block",
-              fontSize: 12,
-              fontWeight: 600,
-              color: "#334155",
-              marginBottom: 5,
-              textTransform: "uppercase",
-              letterSpacing: 0.3,
-            }}
-          >
-            Role *
-          </label>
+          <label style={labelStyle}>Role *</label>
           <div style={{ display: "flex", gap: 8 }}>
             {["user", "admin"].map((r) => (
               <button
@@ -707,3 +768,26 @@ function AddUserModal({ onClose, onCreated }) {
     </div>
   );
 }
+
+const labelStyle = {
+  display: "block",
+  fontSize: 12,
+  fontWeight: 600,
+  color: "#334155",
+  marginBottom: 5,
+  textTransform: "uppercase",
+  letterSpacing: 0.3,
+};
+
+const inputStyle = {
+  width: "100%",
+  padding: "10px 12px",
+  borderRadius: 8,
+  border: "1.5px solid #e2e8f0",
+  fontSize: 13,
+  outline: "none",
+  fontFamily: "Poppins, sans-serif",
+  color: "#0f172a",
+  background: "#f8fafc",
+  boxSizing: "border-box",
+};
