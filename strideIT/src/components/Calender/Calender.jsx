@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { PendingRequestsModal } from "../RequestModal/RequestModal";
 import UsersPanel from "../Users/UsersPanel";
-import LogsPage from "../Logs/LogsPage";
+import LogsPage from "../LogsPage/LogsPage";
 
 const SLOT_COUNT = 26;
 const GRID_START = 8 * 60; // 8:00 AM in minutes
