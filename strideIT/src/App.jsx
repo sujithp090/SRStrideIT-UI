@@ -3,7 +3,7 @@ import LoginScreen from "./components/Login/login";
 import CalendarView from "./components/Calender/Calender";
 import {
   NewRequestModal,
-  EventDetailModal,
+  EditRequestModal,
 } from "./components/RequestModal/RequestModal";
 
 export default function App() {
@@ -28,6 +28,7 @@ export default function App() {
         }}
         onEventClick={(ev) => setSelectedEvent(ev)}
         events={events}
+        onUpdateEvents={(updatedEvents) => setEvents(updatedEvents)}
       />
 
       {showNewReq && (
@@ -48,16 +49,21 @@ export default function App() {
       )}
 
       {selectedEvent && (
-        <EventDetailModal
+        <EditRequestModal
           event={selectedEvent}
           user={user}
           onClose={() => setSelectedEvent(null)}
-          onApprove={(ev) => console.log("Approved:", ev)}
-          onReject={(ev) => console.log("Rejected:", ev)}
           onDelete={(ev) => {
             setEvents(events.filter((e) => e.id !== ev.id));
             setSelectedEvent(null);
             console.log("Deleted:", ev);
+          }}
+          onUpdate={(updatedEvent) => {
+            setEvents(
+              events.map((e) => (e.id === updatedEvent.id ? updatedEvent : e)),
+            );
+            setSelectedEvent(null);
+            console.log("Updated:", updatedEvent);
           }}
         />
       )}

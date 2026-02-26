@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { PendingRequestsModal } from "../RequestModal/RequestModal";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-const HOURS = Array.from({ length: 24 }, (_, i) => {
-  const totalMinutes = 8 * 60 + i * 30; // Start at 8 AM, increment by 30 minutes
+const HOURS = Array.from({ length: 48 }, (_, i) => {
+  const totalMinutes = 8 * 60 + i * 15; // Start at 8 AM, increment by 15 minutes
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   if (hours === 12) return "12:00 PM";
@@ -54,12 +55,14 @@ export default function CalendarView({
   onRequestClick,
   onEventClick,
   events = [],
+  onUpdateEvents,
 }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const [anchor, setAnchor] = useState(new Date(today));
   const [view, setView] = useState("Week");
+  const [showPendingModal, setShowPendingModal] = useState(false);
   const weekDays = getWeekDays(anchor);
 
   // Day view: single day
@@ -98,10 +101,8 @@ export default function CalendarView({
     setAnchor(d);
   };
 
-  const goToday = () => setAnchor(new Date(today));
-
   const handleCellClick = (day, hourIdx) => {
-    const totalMinutes = 8 * 60 + hourIdx * 30;
+    const totalMinutes = 8 * 60 + hourIdx * 15;
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     const slotDate = new Date(day);
@@ -119,16 +120,16 @@ export default function CalendarView({
     else if (view === "Month") nextMonth();
   };
 
-  // Events for a given day + 30-minute cell
-  // Returns events that start or occur during this 30-minute slot
+  // Events for a given day + 15-minute cell
+  // Returns events that start or occur during this 15-minute slot
   const getEvents = (day, hourIdx) => {
-    const totalMinutes = 8 * 60 + hourIdx * 30;
+    const totalMinutes = 8 * 60 + hourIdx * 15;
     const startHours = Math.floor(totalMinutes / 60);
     const startMins = totalMinutes % 60;
     const cellStart = new Date(day);
     cellStart.setHours(startHours, startMins, 0, 0);
     const cellEnd = new Date(cellStart);
-    cellEnd.setMinutes(cellEnd.getMinutes() + 30);
+    cellEnd.setMinutes(cellEnd.getMinutes() + 15);
 
     return events.filter((ev) => {
       if (!isSameDay(ev.start, day)) return false;
@@ -139,32 +140,32 @@ export default function CalendarView({
 
   // Calculate the top position of an event within its cell
   const eventTopPosition = (ev, hourIdx) => {
-    const totalMinutes = 8 * 60 + hourIdx * 30;
+    const totalMinutes = 8 * 60 + hourIdx * 15;
     const cellStartMinutes = totalMinutes;
     const eventStartMinutes = ev.start.getHours() * 60 + ev.start.getMinutes();
     const minuteOffset = eventStartMinutes - cellStartMinutes;
 
-    // Position is proportional to minutes: (minutes / 30) * cellHeight
-    // Cell height is 40px for 30 minutes, so each minute is ~1.33px
-    return (minuteOffset / 30) * 40;
+    // Position is proportional to minutes: (minutes / 15) * cellHeight
+    // Cell height is 20px for 15 minutes, so each minute is ~1.33px
+    return (minuteOffset / 15) * 20;
   };
 
   const eventHeightPx = (ev) => {
     const mins = (ev.end - ev.start) / 60000;
-    // Each 30 minutes is 40px
-    const height = (mins / 30) * 40;
-    return Math.max(38, height);
+    // Each 15 minutes is 20px
+    const height = (mins / 15) * 20;
+    return Math.max(18, height);
   };
 
   // Check if event starts in this cell
   const eventStartsInCell = (ev, hourIdx, day) => {
-    const totalMinutes = 8 * 60 + hourIdx * 30;
+    const totalMinutes = 8 * 60 + hourIdx * 15;
     const startHours = Math.floor(totalMinutes / 60);
     const startMins = totalMinutes % 60;
     const cellStart = new Date(day);
     cellStart.setHours(startHours, startMins, 0, 0);
     const cellEnd = new Date(cellStart);
-    cellEnd.setMinutes(cellEnd.getMinutes() + 30);
+    cellEnd.setMinutes(cellEnd.getMinutes() + 15);
 
     // Check if event starts within this cell
     return ev.start >= cellStart && ev.start < cellEnd;
@@ -230,7 +231,6 @@ export default function CalendarView({
 
   return (
     <div className="cal-root">
-      {/* ── Navbar ── */}
       <div className="cal-navbar">
         <div className="cal-navbar-brand">
           <div className="cal-navbar-icon">
@@ -249,7 +249,10 @@ export default function CalendarView({
         </div>
         <div className="cal-navbar-spacer" />
         {user?.role === "admin" && (
-          <button className="cal-navbar-pill">
+          <button
+            className="cal-navbar-pill"
+            onClick={() => setShowPendingModal(true)}
+          >
             <span className="dot" />
             {pendingCount} pending requests
             <svg
@@ -347,11 +350,6 @@ export default function CalendarView({
                 </button>
               ))}
             </div>
-
-            <div className="cal-header-spacer" />
-            <button className="cal-today-btn" onClick={goToday}>
-              Today
-            </button>
           </div>
 
           {/* Days grid (Y-axis) with time slots (X-axis) */}
@@ -425,10 +423,10 @@ export default function CalendarView({
                               hourIdx,
                             );
 
-                            // Compute how many 30-min cells this event spans horizontally
+                            // Compute how many 15-min cells this event spans horizontally
                             const spanCells = Math.max(
                               1,
-                              Math.round((mergedEnd - ev.start) / (30 * 60000)),
+                              Math.round((mergedEnd - ev.start) / (15 * 60000)),
                             );
 
                             return (
@@ -438,10 +436,50 @@ export default function CalendarView({
                                   spanCells > 1 ? "spanning" : ""
                                 }`}
                                 style={{
-                                  width: `calc(${spanCells * 100}% + ${spanCells - 1}px)`,
+                                  gridColumn: `${hourIdx + 2} / span ${spanCells}`,
                                 }}
-                                onClick={() => onEventClick && onEventClick(ev)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onEventClick && onEventClick(ev);
+                                }}
                               >
+                                {!ev.image && (
+                                  <div
+                                    style={{
+                                      position: "absolute",
+                                      top: "4px",
+                                      right: "4px",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      width: "16px",
+                                      height: "16px",
+                                      backgroundColor: "#fca5a5",
+                                      borderRadius: "50%",
+                                      cursor: "pointer",
+                                    }}
+                                    title="No image uploaded"
+                                  >
+                                    <svg
+                                      width="10"
+                                      height="10"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="#dc2626"
+                                      strokeWidth="3"
+                                      strokeLinecap="round"
+                                    >
+                                      <circle cx="12" cy="12" r="10" />
+                                      <line x1="12" y1="8" x2="12" y2="12" />
+                                      <line
+                                        x1="12"
+                                        y1="16"
+                                        x2="12.01"
+                                        y2="16"
+                                      />
+                                    </svg>
+                                  </div>
+                                )}
                                 <div className="cal-event-title">
                                   {ev.candidate}
                                 </div>
@@ -459,6 +497,26 @@ export default function CalendarView({
                                     minute: "2-digit",
                                   })}
                                 </div>
+                                {ev.status === "pending" && (
+                                  <div
+                                    style={{
+                                      position: "absolute",
+                                      bottom: "0",
+                                      left: "0",
+                                      right: "0",
+                                      height: "4px",
+                                      backgroundColor: "#9ca3af",
+                                      borderRadius: "0 0 4px 4px",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      fontSize: "10px",
+                                      color: "#fff",
+                                      fontWeight: "600",
+                                    }}
+                                    title="Pending approval"
+                                  />
+                                )}
                               </div>
                             );
                           })}
@@ -472,6 +530,33 @@ export default function CalendarView({
           </div>
         </div>
       </div>
+
+      {showPendingModal && (
+        <PendingRequestsModal
+          pendingEvents={events.filter((e) => e.status === "pending")}
+          onClose={() => setShowPendingModal(false)}
+          onApprove={(event) => {
+            onUpdateEvents &&
+              onUpdateEvents(
+                events.map((e) =>
+                  e.id === event.id ? { ...e, status: "approved" } : e,
+                ),
+              );
+            setShowPendingModal(false);
+          }}
+          onReject={(eventId, reason) => {
+            onUpdateEvents &&
+              onUpdateEvents(
+                events.map((e) =>
+                  e.id === eventId
+                    ? { ...e, status: "rejected", rejectionReason: reason }
+                    : e,
+                ),
+              );
+            setShowPendingModal(false);
+          }}
+        />
+      )}
     </div>
   );
 }
