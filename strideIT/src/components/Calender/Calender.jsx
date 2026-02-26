@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { PendingRequestsModal } from "../RequestModal/RequestModal";
+import UsersPanel from "../Users/UsersPanel";
 
-// ── helpers ──────────────────────────────────────────────────────────────────
 const HOURS = Array.from({ length: 24 }, (_, i) => {
-  const totalMinutes = 8 * 60 + i * 30; // Start at 8 AM, increment by 30 minutes
+  const totalMinutes = 8 * 60 + i * 30;
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   const period = hours < 12 ? "AM" : "PM";
@@ -29,7 +29,7 @@ const MONTH_NAMES = [
 
 function getWeekDays(anchor) {
   const start = new Date(anchor);
-  start.setDate(anchor.getDate() - anchor.getDay()); // Sunday
+  start.setDate(anchor.getDate() - anchor.getDay());
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(start);
     d.setDate(start.getDate() + i);
@@ -45,7 +45,6 @@ function isSameDay(a, b) {
   );
 }
 
-// ── CalendarView ─────────────────────────────────────────────────────────────
 export default function CalendarView({
   user,
   onLogout,
@@ -60,6 +59,8 @@ export default function CalendarView({
   const [anchor, setAnchor] = useState(new Date(today));
   const [view, setView] = useState("Week");
   const [showPendingModal, setShowPendingModal] = useState(false);
+  const [showUsersPanel, setShowUsersPanel] = useState(false);
+  const [activeNav, setActiveNav] = useState("calendar"); // "calendar" | "settings"
   const weekDays = getWeekDays(anchor);
 
   const prevWeek = () => {
@@ -72,7 +73,6 @@ export default function CalendarView({
     d.setDate(d.getDate() + 7);
     setAnchor(d);
   };
-
   const prevMonth = () => {
     const d = new Date(anchor);
     d.setMonth(d.getMonth() - 1);
@@ -86,92 +86,69 @@ export default function CalendarView({
 
   const handlePrev = () => {
     if (view === "Week") prevWeek();
-    else if (view === "Month") prevMonth();
+    else prevMonth();
   };
   const handleNext = () => {
     if (view === "Week") nextWeek();
-    else if (view === "Month") nextMonth();
+    else nextMonth();
   };
 
-  // Events for a given day + 30-minute cell
   const getEvents = (day, hourIdx) => {
     const totalMinutes = 8 * 60 + hourIdx * 30;
-    const startHours = Math.floor(totalMinutes / 60);
-    const startMins = totalMinutes % 60;
     const cellStart = new Date(day);
-    cellStart.setHours(startHours, startMins, 0, 0);
+    cellStart.setHours(Math.floor(totalMinutes / 60), totalMinutes % 60, 0, 0);
     const cellEnd = new Date(cellStart);
     cellEnd.setMinutes(cellEnd.getMinutes() + 30);
-
-    return events.filter((ev) => {
-      if (!isSameDay(ev.start, day)) return false;
-      return ev.start < cellEnd && ev.end > cellStart;
-    });
-  };
-
-  // Check if event starts in this cell
-  const eventStartsInCell = (ev, hourIdx, day) => {
-    const totalMinutes = 8 * 60 + hourIdx * 30;
-    const startHours = Math.floor(totalMinutes / 60);
-    const startMins = totalMinutes % 60;
-    const cellStart = new Date(day);
-    cellStart.setHours(startHours, startMins, 0, 0);
-    const cellEnd = new Date(cellStart);
-    cellEnd.setMinutes(cellEnd.getMinutes() + 30);
-
-    return ev.start >= cellStart && ev.start < cellEnd;
-  };
-
-  // Check if two events should be merged
-  const shouldMerge = (ev1, ev2) => {
-    return (
-      ev1.candidate === ev2.candidate &&
-      ev1.company === ev2.company &&
-      ev1.round === ev2.round
+    return events.filter(
+      (ev) =>
+        isSameDay(ev.start, day) && ev.start < cellEnd && ev.end > cellStart,
     );
   };
 
-  // Find merged event end time (for consecutive matching events)
+  const eventStartsInCell = (ev, hourIdx, day) => {
+    const totalMinutes = 8 * 60 + hourIdx * 30;
+    const cellStart = new Date(day);
+    cellStart.setHours(Math.floor(totalMinutes / 60), totalMinutes % 60, 0, 0);
+    const cellEnd = new Date(cellStart);
+    cellEnd.setMinutes(cellEnd.getMinutes() + 30);
+    return ev.start >= cellStart && ev.start < cellEnd;
+  };
+
+  const shouldMerge = (ev1, ev2) =>
+    ev1.candidate === ev2.candidate &&
+    ev1.company === ev2.company &&
+    ev1.round === ev2.round;
+
   const getMergedEventEnd = (ev, day, startingHourIdx) => {
     let mergedEnd = ev.end;
     let currentEnd = ev.end;
     let currentHourIdx = startingHourIdx;
-
     while (currentHourIdx < HOURS.length) {
       currentHourIdx++;
       if (currentHourIdx >= HOURS.length) break;
-
-      const nextCellEvents = getEvents(day, currentHourIdx);
-      const matchingEvent = nextCellEvents.find(
+      const matchingEvent = getEvents(day, currentHourIdx).find(
         (nextEv) =>
           nextEv.start.getTime() === currentEnd.getTime() &&
           shouldMerge(ev, nextEv),
       );
-
       if (matchingEvent) {
         mergedEnd = matchingEvent.end;
         currentEnd = matchingEvent.end;
-      } else {
-        break;
-      }
+      } else break;
     }
-
     return mergedEnd;
   };
 
-  // Pending count for navbar badge
   const pendingCount = events.filter((e) => e.status === "pending").length;
 
-  // Determine days to display
   let daysToDisplay = [];
   if (view === "Week") {
     daysToDisplay = weekDays;
-  } else if (view === "Month") {
+  } else {
     const firstDay = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
     const lastDay = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
     const start = new Date(firstDay);
     start.setDate(firstDay.getDate() - firstDay.getDay());
-    daysToDisplay = [];
     let current = new Date(start);
     while (current <= lastDay || current.getDay() !== 0) {
       daysToDisplay.push(new Date(current));
@@ -181,6 +158,7 @@ export default function CalendarView({
 
   return (
     <div className="cal-root">
+      {/* ── Navbar ── */}
       <div className="cal-navbar">
         <div className="cal-navbar-brand">
           <div className="cal-navbar-icon">
@@ -198,8 +176,6 @@ export default function CalendarView({
           <span className="cal-navbar-title">Interview Approval App</span>
         </div>
         <div className="cal-navbar-spacer" />
-
-        {/* New Request button - visible to all users */}
         <button
           className="cal-navbar-pill cal-navbar-pill--primary"
           onClick={() => onRequestClick && onRequestClick(null)}
@@ -218,7 +194,6 @@ export default function CalendarView({
           </svg>
           New Request
         </button>
-
         {user?.role === "admin" && (
           <button
             className="cal-navbar-pill"
@@ -228,7 +203,6 @@ export default function CalendarView({
             {pendingCount} pending requests
           </button>
         )}
-
         <button className="cal-navbar-pill" onClick={onLogout}>
           🔒 Log Out
         </button>
@@ -237,7 +211,15 @@ export default function CalendarView({
       <div className="cal-shell">
         {/* ── Sidebar ── */}
         <div className="cal-sidebar">
-          <button className="cal-sidebar-btn active" title="Calendar">
+          {/* Calendar icon */}
+          <button
+            className={`cal-sidebar-btn ${activeNav === "calendar" ? "active" : ""}`}
+            title="Calendar"
+            onClick={() => {
+              setActiveNav("calendar");
+              setShowUsersPanel(false);
+            }}
+          >
             <svg viewBox="0 0 24 24">
               <rect x="3" y="4" width="18" height="18" rx="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
@@ -245,17 +227,29 @@ export default function CalendarView({
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
           </button>
+
+          {/* Settings / Users icon — admin only */}
+          {user?.role === "admin" && (
+            <button
+              className={`cal-sidebar-btn ${activeNav === "settings" ? "active" : ""}`}
+              title="User Management"
+              onClick={() => {
+                setActiveNav("settings");
+                setShowUsersPanel(true);
+              }}
+            >
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </button>
+          )}
         </div>
 
-        {/* ── Main ── */}
+        {/* ── Main calendar ── */}
         <div className="cal-main">
-          {/* Calendar header */}
           <div className="cal-header">
-            <button
-              className="cal-nav-btn"
-              onClick={handlePrev}
-              title="Previous"
-            >
+            <button className="cal-nav-btn" onClick={handlePrev}>
               <svg
                 width="14"
                 height="14"
@@ -268,7 +262,7 @@ export default function CalendarView({
                 <polyline points="15 18 9 12 15 6" />
               </svg>
             </button>
-            <button className="cal-nav-btn" onClick={handleNext} title="Next">
+            <button className="cal-nav-btn" onClick={handleNext}>
               <svg
                 width="14"
                 height="14"
@@ -281,7 +275,6 @@ export default function CalendarView({
                 <polyline points="9 18 15 12 9 6" />
               </svg>
             </button>
-
             <span className="cal-header-month">
               {view === "Month"
                 ? MONTH_NAMES[anchor.getMonth()]
@@ -300,7 +293,6 @@ export default function CalendarView({
                 daysToDisplay.length > 0 &&
                 daysToDisplay[0].getFullYear()}
             </span>
-
             <div className="cal-view-tabs">
               {["Week", "Month"].map((v) => (
                 <button
@@ -314,9 +306,7 @@ export default function CalendarView({
             </div>
           </div>
 
-          {/* Days grid (Y-axis) with time slots (X-axis) */}
           <div className="cal-grid-scroll">
-            {/* Time header (X-axis) */}
             <div className="cal-times-header">
               <div
                 className="cal-times-header-corner"
@@ -334,7 +324,6 @@ export default function CalendarView({
                 const isCurrentMonth =
                   view !== "Month" || day.getMonth() === anchor.getMonth();
                 const isToday = isSameDay(day, today);
-
                 return (
                   <div
                     key={dayIdx}
@@ -343,7 +332,6 @@ export default function CalendarView({
                       gridTemplateColumns: `120px repeat(${HOURS.length}, 1fr)`,
                     }}
                   >
-                    {/* Day label (Y-axis) */}
                     <div
                       className={`cal-day-row-header ${isToday ? "today" : ""}`}
                     >
@@ -352,19 +340,14 @@ export default function CalendarView({
                       </div>
                       <div className="cal-day-row-date">{day.getDate()}</div>
                     </div>
-
-                    {/* Time slots for this day (X-axis) */}
                     {HOURS.map((hour, hourIdx) => {
-                      const cellEvents = getEvents(day, hourIdx);
-                      const eventsStartingHere = cellEvents.filter((ev) =>
-                        eventStartsInCell(ev, hourIdx, day),
+                      const eventsStartingHere = getEvents(day, hourIdx).filter(
+                        (ev) => eventStartsInCell(ev, hourIdx, day),
                       );
-
                       return (
                         <div
                           key={`cell-${dayIdx}-${hourIdx}`}
                           className={`cal-cell ${isToday ? "today-row" : ""}`}
-                          // No onClick handler — cells are not clickable
                         >
                           {eventsStartingHere.map((ev) => {
                             let roundClass = "pending";
@@ -373,11 +356,8 @@ export default function CalendarView({
                             else if (ev.round === "Client round")
                               roundClass = "round-client";
                             else if (
-                              ev.round === "Custom" ||
-                              (ev.round &&
-                                ev.round !== "L1" &&
-                                ev.round !== "L2" &&
-                                ev.round !== "Client round")
+                              ev.round &&
+                              !["L1", "L2", "Client round"].includes(ev.round)
                             )
                               roundClass = "round-custom";
 
@@ -407,16 +387,15 @@ export default function CalendarView({
                                   <div
                                     style={{
                                       position: "absolute",
-                                      top: "4px",
-                                      right: "4px",
+                                      top: 4,
+                                      right: 4,
+                                      width: 16,
+                                      height: 16,
+                                      backgroundColor: "#fca5a5",
+                                      borderRadius: "50%",
                                       display: "flex",
                                       alignItems: "center",
                                       justifyContent: "center",
-                                      width: "16px",
-                                      height: "16px",
-                                      backgroundColor: "#fca5a5",
-                                      borderRadius: "50%",
-                                      cursor: "pointer",
                                     }}
                                     title="No image uploaded"
                                   >
@@ -461,14 +440,13 @@ export default function CalendarView({
                                   <div
                                     style={{
                                       position: "absolute",
-                                      bottom: "0",
-                                      left: "0",
-                                      right: "0",
-                                      height: "4px",
+                                      bottom: 0,
+                                      left: 0,
+                                      right: 0,
+                                      height: 4,
                                       backgroundColor: "#9ca3af",
                                       borderRadius: "0 0 4px 4px",
                                     }}
-                                    title="Pending approval"
                                   />
                                 )}
                               </div>
@@ -485,6 +463,7 @@ export default function CalendarView({
         </div>
       </div>
 
+      {/* ── Pending Modal ── */}
       {showPendingModal && (
         <PendingRequestsModal
           pendingEvents={events.filter((e) => e.status === "pending")}
@@ -508,6 +487,16 @@ export default function CalendarView({
                 ),
               );
             setShowPendingModal(false);
+          }}
+        />
+      )}
+
+      {/* ── Users Panel ── */}
+      {showUsersPanel && (
+        <UsersPanel
+          onClose={() => {
+            setShowUsersPanel(false);
+            setActiveNav("calendar");
           }}
         />
       )}

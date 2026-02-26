@@ -1,40 +1,49 @@
 import { useState } from "react";
-
-// Hard-coded users — no backend
-const USERS = [
-  {
-    email: "admin",
-    password: "admin123",
-    role: "admin",
-    name: "Admin User",
-  },
-  {
-    email: "user",
-    password: "user123",
-    role: "user",
-    name: "Jane Doe",
-  },
-];
+import { supabase } from "../../lib/supabase";
 
 export default function LoginScreen({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError("");
-    const match = USERS.find(
-      (u) =>
-        u.email === email.trim().toLowerCase() &&
-        u.password === password &&
-        (isAdmin ? u.role === "admin" : u.role === "user"),
-    );
-    if (match) {
-      onLogin(match);
-    } else {
-      setError("Invalid credentials or wrong login mode.");
+    if (!email.trim() || !password) {
+      setError("Please enter your email and password.");
+      return;
     }
+    setLoading(true);
+
+    // 1. Sign in with Supabase Auth
+    const { data: authData, error: authError } =
+      await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
+    if (authError) {
+      setError("Invalid email or password.");
+      setLoading(false);
+      return;
+    }
+
+    // 2. Fetch the user's profile to get name + role
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("id, name, email, role")
+      .eq("id", authData.user.id)
+      .single();
+
+    if (profileError || !profile) {
+      setError("Account setup incomplete. Contact your admin.");
+      await supabase.auth.signOut();
+      setLoading(false);
+      return;
+    }
+
+    onLogin(profile);
+    setLoading(false);
   };
 
   const handleKeyDown = (e) => {
@@ -44,7 +53,6 @@ export default function LoginScreen({ onLogin }) {
   return (
     <div className="login-wrapper">
       <div className="login-card">
-        {/* Logo */}
         <div className="login-logo-wrap">
           <div className="login-logo-icon">
             <svg
@@ -61,11 +69,10 @@ export default function LoginScreen({ onLogin }) {
           <span className="login-app-name">Interview Approval App</span>
         </div>
 
-        <div className="login-title">Login</div>
+        <div className="login-title">Welcome back</div>
 
         {error && <div className="login-error-msg">⚠ {error}</div>}
 
-        {/* Email */}
         <div className="login-field">
           <label className="login-label">Email</label>
           <input
@@ -75,10 +82,10 @@ export default function LoginScreen({ onLogin }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={handleKeyDown}
+            disabled={loading}
           />
         </div>
 
-        {/* Password */}
         <div className="login-field">
           <label className="login-label">Password</label>
           <input
@@ -88,23 +95,12 @@ export default function LoginScreen({ onLogin }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             onKeyDown={handleKeyDown}
+            disabled={loading}
           />
         </div>
 
-        {/* Admin toggle */}
-        <div className="login-toggle-row">
-          <span className="login-toggle-label">Log in as Admin</span>
-          <button
-            className={`toggle-switch ${isAdmin ? "on" : ""}`}
-            onClick={() => setIsAdmin((v) => !v)}
-            aria-label="Toggle admin login"
-          >
-            <div className="toggle-knob" />
-          </button>
-        </div>
-
-        <button className="login-btn" onClick={handleLogin}>
-          Log In
+        <button className="login-btn" onClick={handleLogin} disabled={loading}>
+          {loading ? "Logging in..." : "Log In"}
         </button>
       </div>
     </div>
