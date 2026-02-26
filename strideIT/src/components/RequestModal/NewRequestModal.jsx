@@ -43,7 +43,12 @@ const CalendarIcon = () => (
   </svg>
 );
 
-export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
+export function NewRequestModal({
+  onClose,
+  onSubmit,
+  selectedTimeSlot,
+  calendar,
+}) {
   const [roundOpen, setRoundOpen] = useState(false);
   const [startOpen, setStartOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
@@ -87,6 +92,7 @@ export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
       candidate,
       company,
       round: round === "Custom" ? customRound : round,
+      calendar,
       date,
       startTime,
       endTime,

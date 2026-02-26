@@ -25,7 +25,7 @@ export default function UsersPanel({ onClose }) {
     setLoading(true);
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, name, email, role, username, created_at")
+      .select("id, name, email, role, username, calendars, created_at")
       .order("created_at", { ascending: false });
 
     if (!error) setUsers(data);
@@ -327,6 +327,18 @@ export default function UsersPanel({ onClose }) {
                   >
                     {u.email}
                   </div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "#0ea5e9",
+                      fontWeight: 600,
+                      marginTop: 4,
+                    }}
+                  >
+                    {(u.calendars || ["boys"])
+                      .map((c) => c.toUpperCase())
+                      .join(" • ")}
+                  </div>
                 </div>
 
                 {/* Delete */}
@@ -470,6 +482,7 @@ function AddUserModal({ onClose, onCreated }) {
   const [role, setRole] = useState("user");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [calendars, setCalendars] = useState(["boys"]);
 
   // Auto-suggest username from name as user types
   const handleNameChange = (val) => {
@@ -529,7 +542,10 @@ function AddUserModal({ onClose, onCreated }) {
     // 3. Update the profile with username (and role if admin)
     // The DB trigger creates the profile row; we update it with username + role
     if (data.user) {
-      const updates = { username: username.trim().toLowerCase() };
+      const updates = {
+        username: username.trim().toLowerCase(),
+        calendars,
+      };
       if (role === "admin") updates.role = "admin";
 
       const { error: updateError } = await supabase
@@ -606,7 +622,6 @@ function AddUserModal({ onClose, onCreated }) {
             </svg>
           </button>
         </div>
-
         {error && (
           <div
             style={{
@@ -622,7 +637,6 @@ function AddUserModal({ onClose, onCreated }) {
             ⚠ {error}
           </div>
         )}
-
         {/* Full Name */}
         <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>Full Name *</label>
@@ -634,7 +648,6 @@ function AddUserModal({ onClose, onCreated }) {
             style={inputStyle}
           />
         </div>
-
         {/* Username */}
         <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>Username *</label>
@@ -671,7 +684,6 @@ function AddUserModal({ onClose, onCreated }) {
             Lowercase letters, numbers, and underscores only. Used to log in.
           </div>
         </div>
-
         {/* Email */}
         <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>Email *</label>
@@ -683,7 +695,6 @@ function AddUserModal({ onClose, onCreated }) {
             style={inputStyle}
           />
         </div>
-
         {/* Password */}
         <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>Password *</label>
@@ -695,7 +706,51 @@ function AddUserModal({ onClose, onCreated }) {
             style={inputStyle}
           />
         </div>
+        {/* Calendar Access */}
+        <div style={{ marginBottom: 20 }}>
+          <label style={labelStyle}>Calendar Access *</label>
 
+          <div style={{ display: "flex", gap: 8 }}>
+            {["boys", "girls"].map((c) => {
+              const active = calendars.includes(c);
+
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => {
+                    if (active) {
+                      setCalendars(calendars.filter((x) => x !== c));
+                    } else {
+                      setCalendars([...calendars, c]);
+                    }
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "9px",
+                    borderRadius: 8,
+                    cursor: "pointer",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    fontFamily: "Poppins, sans-serif",
+                    border: active
+                      ? "2px solid #6366f1"
+                      : "1.5px solid #e2e8f0",
+                    background: active ? "#eef2ff" : "#f8fafc",
+                    color: active ? "#4338ca" : "#64748b",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {c.toUpperCase()}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
+            Select which calendars this user can access.
+          </div>
+        </div>
         {/* Role */}
         <div style={{ marginBottom: 20 }}>
           <label style={labelStyle}>Role *</label>
@@ -724,7 +779,6 @@ function AddUserModal({ onClose, onCreated }) {
             ))}
           </div>
         </div>
-
         <div style={{ display: "flex", gap: 10 }}>
           <button
             onClick={onClose}

@@ -127,6 +127,7 @@ export function PendingRequestsModal({
                   borderRadius: "12px",
                   padding: "16px",
                   marginBottom: "12px",
+                  position: "relative", // ✅ ADD THIS
                 }}
               >
                 {/* ── Image banner — full width, tall, clickable ── */}
@@ -223,7 +224,31 @@ export function PendingRequestsModal({
                     No image uploaded
                   </div>
                 )}
-
+                {/* Calendar Pill */}
+                <div
+                  style={{
+                    position: "absolute",
+                    bottpm: "12px",
+                    right: "12px",
+                    padding: "4px 12px",
+                    borderRadius: "999px",
+                    fontSize: "10px",
+                    fontWeight: "700",
+                    letterSpacing: "0.6px",
+                    textTransform: "uppercase",
+                    background:
+                      event.calendar === "boys"
+                        ? "linear-gradient(135deg,#3b82f6,#1d4ed8)"
+                        : "linear-gradient(135deg,#ec4899,#be185d)",
+                    color: "#fff",
+                    boxShadow:
+                      event.calendar === "boys"
+                        ? "0 4px 10px rgba(59,130,246,0.35)"
+                        : "0 4px 10px rgba(236,72,153,0.35)",
+                  }}
+                >
+                  {event.calendar}
+                </div>
                 {/* ── Candidate info ── */}
                 <div style={{ marginBottom: "12px" }}>
                   <div
