@@ -1,33 +1,66 @@
 import { useState, useRef } from "react";
 import { ModalChrome } from "./ModalChrome";
 
-// ── New Interview Request Modal ───────────────────────────────────────────────
-export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
-  const isValidDate = selectedTimeSlot && selectedTimeSlot instanceof Date;
+const toTimeInput = (d) => {
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+};
 
-  const initDate = isValidDate
-    ? selectedTimeSlot.toISOString().split("T")[0]
-    : "";
-  const initTime = isValidDate
-    ? selectedTimeSlot.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      })
-    : "10:00";
+const toDateInput = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+const ChevronIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#888"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
+const CalendarIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#888"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+);
+
+export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
+  const [roundOpen, setRoundOpen] = useState(false);
+  const [startOpen, setStartOpen] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
+
+  const isValidDate =
+    selectedTimeSlot instanceof Date && !isNaN(selectedTimeSlot);
+  const slotStart = isValidDate ? selectedTimeSlot : null;
+  const slotEnd = slotStart
+    ? new Date(slotStart.getTime() + 30 * 60 * 1000)
+    : null;
 
   const [candidate, setCandidate] = useState("");
-  const [date, setDate] = useState(initDate);
-  const [startTime, setStart] = useState(initTime);
-  const [endTime, setEnd] = useState(
-    isValidDate
-      ? new Date(selectedTimeSlot.getTime() + 1800000).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        })
-      : "10:30",
+  const [date, setDate] = useState(slotStart ? toDateInput(slotStart) : "");
+  const [startTime, setStart] = useState(
+    slotStart ? toTimeInput(slotStart) : "",
   );
+  const [endTime, setEnd] = useState(slotEnd ? toTimeInput(slotEnd) : "");
   const [company, setCompany] = useState("");
   const [round, setRound] = useState("L1");
   const [customRound, setCustomRound] = useState("");
@@ -37,7 +70,6 @@ export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
   const fileRef = useRef();
 
   const handleFile = (f) => f && setFile(f);
-
   const handleDrop = (e) => {
     e.preventDefault();
     setDragOver(false);
@@ -45,7 +77,7 @@ export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
   };
 
   const handleSubmit = () => {
-    if (!candidate || !date || !company) return;
+    if (!candidate || !date || !company || !startTime || !endTime) return;
     setSubmitted(true);
     onSubmit &&
       onSubmit({
@@ -58,21 +90,19 @@ export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
         image: file ? URL.createObjectURL(file) : null,
         status: "pending",
         title: `Interview - ${candidate}`,
-        start: new Date(date + "T" + startTime),
-        end: new Date(date + "T" + endTime),
+        start: new Date(`${date}T${startTime}`),
+        end: new Date(`${date}T${endTime}`),
       });
   };
 
-  const formatDatetime = () => {
-    if (!date) return "Select date and time below";
-    const d = new Date(date + "T" + startTime);
-    const e = new Date(date + "T" + endTime);
-    return `${d.toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    })}, ${startTime} – ${endTime}`;
-  };
+  const roundColor =
+    round === "L1"
+      ? "#3b82f6"
+      : round === "L2"
+        ? "#10b981"
+        : round === "Client round"
+          ? "#f97316"
+          : "#7f1d1d";
 
   if (submitted) {
     return (
@@ -98,9 +128,64 @@ export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
 
   return (
     <ModalChrome onClose={onClose}>
+      <style>{`
+        .modal-input-wrap {
+          position: relative;
+          display: block;
+        }
+        .modal-input-wrap .modal-input {
+          width: 100%;
+          padding-right: 36px;
+        }
+        /* hide native date/time picker icons */
+        .modal-input-wrap .modal-input[type="date"]::-webkit-calendar-picker-indicator,
+        .modal-input-wrap .modal-input[type="time"]::-webkit-calendar-picker-indicator {
+          opacity: 0;
+          position: absolute;
+          right: 0;
+          width: 36px;
+          height: 100%;
+          cursor: pointer;
+        }
+        /* static icon (calendar) */
+        .modal-input-icon {
+          position: absolute;
+          right: 10px;
+          top: 50%;
+          transform: translateY(-50%);
+          display: flex;
+          align-items: center;
+          pointer-events: none;
+        }
+        /* kill native select arrow on ALL browsers */
+        .modal-select {
+          appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          padding-right: 36px;
+          border-left: 4px solid var(--round-color, #3b82f6);
+          cursor: pointer;
+          width: 100%;
+        }
+        /* chevron — rotates around its own centre */
+        .modal-chevron {
+          position: absolute;
+          right: 10px;
+          top: 50%;
+          transform: translateY(-50%) rotate(0deg);
+          transform-origin: 50% 50%;
+          transition: transform 0.2s ease;
+          display: flex;
+          align-items: center;
+          pointer-events: none;
+        }
+        .modal-input-wrap.open .modal-chevron {
+          transform: translateY(-50%) rotate(180deg);
+        }
+      `}</style>
+
       <div className="modal-body">
         <div className="modal-header-wrapper">
-          {/* Title */}
           <div className="modal-section-header">
             <div className="modal-section-icon">
               <svg viewBox="0 0 24 24">
@@ -120,7 +205,6 @@ export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
           </button>
         </div>
 
-        {/* Upload zone */}
         {!file ? (
           <div
             className={`modal-upload-zone ${dragOver ? "drag-over" : ""}`}
@@ -184,46 +268,67 @@ export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
           </div>
         )}
 
-        {/* Date/time fields */}
+        {/* Date + Start Time */}
         <div className="modal-input-row">
           <div className="modal-field">
             <label className="modal-label">Date *</label>
-            <input
-              type="date"
-              className="modal-input"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-            />
+            {/* Date gets a static calendar icon — no chevron, it doesn't "open/close" */}
+            <div className="modal-input-wrap">
+              <input
+                type="date"
+                className="modal-input"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+              />
+              <span className="modal-input-icon">
+                <CalendarIcon />
+              </span>
+            </div>
           </div>
           <div className="modal-field">
             <label className="modal-label">Start Time *</label>
-            <input
-              type="time"
-              className="modal-input"
-              value={startTime}
-              step="900"
-              onChange={(e) => setStart(e.target.value)}
-              required
-            />
+            <div className={`modal-input-wrap${startOpen ? " open" : ""}`}>
+              <input
+                type="time"
+                className="modal-input"
+                value={startTime}
+                step="1800"
+                onChange={(e) => setStart(e.target.value)}
+                required
+                onFocus={() => setStartOpen(true)}
+                onBlur={() => setStartOpen(false)}
+              />
+              <span className="modal-chevron">
+                <ChevronIcon />
+              </span>
+            </div>
           </div>
         </div>
 
+        {/* End Time */}
         <div className="modal-input-row">
           <div className="modal-field">
             <label className="modal-label">End Time *</label>
-            <input
-              type="time"
-              className="modal-input"
-              value={endTime}
-              step="900"
-              onChange={(e) => setEnd(e.target.value)}
-              required
-            />
+            <div className={`modal-input-wrap${endOpen ? " open" : ""}`}>
+              <input
+                type="time"
+                className="modal-input"
+                value={endTime}
+                step="1800"
+                onChange={(e) => setEnd(e.target.value)}
+                required
+                onFocus={() => setEndOpen(true)}
+                onBlur={() => setEndOpen(false)}
+              />
+              <span className="modal-chevron">
+                <ChevronIcon />
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Form fields */}
+        {/* Candidate + Company */}
         <div className="modal-input-row">
           <div className="modal-field">
             <label className="modal-label">Candidate Name *</label>
@@ -245,30 +350,30 @@ export function NewRequestModal({ onClose, onSubmit, selectedTimeSlot }) {
           </div>
         </div>
 
+        {/* Round */}
         <div className="modal-input-row">
           <div className="modal-field">
             <label className="modal-label">Round *</label>
-            <select
-              className="modal-input"
-              value={round}
-              onChange={(e) => setRound(e.target.value)}
-              style={{
-                borderLeft: `4px solid ${
-                  round === "L1"
-                    ? "#3b82f6"
-                    : round === "L2"
-                      ? "#10b981"
-                      : round === "Client round"
-                        ? "#f97316"
-                        : "#7f1d1d"
-                }`,
-              }}
+            <div
+              className={`modal-input-wrap${roundOpen ? " open" : ""}`}
+              style={{ "--round-color": roundColor }}
             >
-              <option value="L1">L1</option>
-              <option value="L2">L2</option>
-              <option value="Client round">Client round</option>
-              <option value="Custom">Custom</option>
-            </select>
+              <select
+                className="modal-input modal-select"
+                value={round}
+                onChange={(e) => setRound(e.target.value)}
+                onFocus={() => setRoundOpen(true)}
+                onBlur={() => setRoundOpen(false)}
+              >
+                <option value="L1">L1</option>
+                <option value="L2">L2</option>
+                <option value="Client round">Client round</option>
+                <option value="Custom">Custom</option>
+              </select>
+              <span className="modal-chevron">
+                <ChevronIcon />
+              </span>
+            </div>
           </div>
           {round === "Custom" && (
             <div className="modal-field">

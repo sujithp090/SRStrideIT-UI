@@ -189,9 +189,34 @@ body {
   font-family: "Poppins", system-ui, Avenir, Helvetica, Arial, sans-serif;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s;
+  transition:
+    background 0.2s,
+    transform 0.15s,
+    box-shadow 0.15s;
 }
 
+.cal-navbar-pill--primary {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.5);
+}
+
+.cal-navbar-pill--primary:hover {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.6);
+  transform: translateY(-1px);
+}
+select.modal-input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: none;
+}
+
+select.modal-input::-ms-expand {
+  display: none;
+}
 .cal-navbar-pill:hover {
   background: rgba(255, 255, 255, 0.2);
 }
@@ -387,25 +412,64 @@ body {
   top: 0;
   background: var(--white);
   z-index: 10;
-  overflow-x: hidden;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  /* REMOVED: overflow-x: hidden — this was clipping the header */
 }
-.cal-times-header::-webkit-scrollbar {
-  display: none;
+
+/* ── CHANGED: show scrollbar so user can actually reach it ── */
+.cal-grid-scroll::-webkit-scrollbar {
+  height: 6px; /* was 0px — invisible scrollbar = can't scroll */
+  width: 4px;
+}
+.cal-grid-scroll::-webkit-scrollbar-track {
+  background: var(--gray-100);
+  border-radius: 4px;
+}
+.cal-grid-scroll::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border-radius: 4px;
+}
+.cal-grid-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
+}
+
+/* ── Select wrapper with custom chevron arrow ── */
+.modal-select-wrap {
+  position: relative;
+  display: block;
+}
+
+.modal-select-wrap .modal-select {
+  /* remove native arrow */
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px; /* room for custom arrow */
+  border-left: 4px solid var(--round-color, #3b82f6);
+  cursor: pointer;
+}
+
+.modal-select-arrow {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--gray-500);
+  pointer-events: none; /* clicks pass through to the select */
 }
 
 .cal-times-header-corner {
+  width: 120px;
+  min-width: 120px;
+  flex-shrink: 0;
   border-right: 1.5px solid var(--gray-100);
   position: sticky;
   left: 0;
   background: var(--white);
   z-index: 11;
 }
-
 .cal-time-header-cell {
-  padding: 8px 2px;
+  padding: 8px 4px;
   font-size: 10px;
   font-weight: 600;
   color: var(--gray-600);
@@ -418,8 +482,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 70px;
-  flex: 0 0 70px;
+  min-width: 90px;
+  flex: 0 0 90px;
 }
 
 /* ── Grid with vertical layout (days on Y, time on X) ──────────── */
@@ -449,18 +513,19 @@ body {
   display: flex;
   flex-direction: column;
 }
-
+.modal-select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+}
 .cal-day-row {
   display: grid;
-  grid-template-columns: 120px repeat(48, 1fr);
+  grid-template-columns: 120px repeat(24, 90px);
   border-bottom: 1px solid var(--gray-100);
   gap: 0;
-  min-height: 50px;
+  min-height: 56px;
   position: relative;
-  grid-auto-rows: 50px;
-  auto-flow: dense;
 }
-
 .cal-day-row.other-month {
   background: rgba(248, 250, 252, 0.5);
   opacity: 0.6;
@@ -502,14 +567,9 @@ body {
 .cal-cell {
   border-right: 1px solid var(--gray-100);
   position: relative;
-  cursor: pointer;
-  transition: background 0.15s;
-  min-height: 50px;
+  cursor: default;
+  min-height: 56px;
   display: contents;
-}
-
-.cal-cell:hover {
-  background: rgba(219, 234, 254, 0.1);
 }
 
 .cal-cell.today-row {

@@ -2,13 +2,12 @@ import { useState } from "react";
 import { PendingRequestsModal } from "../RequestModal/RequestModal";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-const HOURS = Array.from({ length: 48 }, (_, i) => {
-  const totalMinutes = 8 * 60 + i * 15; // Start at 8 AM, increment by 15 minutes
+const HOURS = Array.from({ length: 24 }, (_, i) => {
+  const totalMinutes = 8 * 60 + i * 30; // Start at 8 AM, increment by 30 minutes
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  if (hours === 12) return "12:00 PM";
   const period = hours < 12 ? "AM" : "PM";
-  const displayHours = hours < 12 ? hours : hours - 12;
+  const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
   return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
 });
 
@@ -46,8 +45,6 @@ function isSameDay(a, b) {
   );
 }
 
-// ── Events are now managed via state in App.jsx ─────────────────────────────
-
 // ── CalendarView ─────────────────────────────────────────────────────────────
 export default function CalendarView({
   user,
@@ -65,9 +62,6 @@ export default function CalendarView({
   const [showPendingModal, setShowPendingModal] = useState(false);
   const weekDays = getWeekDays(anchor);
 
-  // Day view: single day
-  const getDayToDisplay = () => anchor;
-
   const prevWeek = () => {
     const d = new Date(anchor);
     d.setDate(d.getDate() - 7);
@@ -76,17 +70,6 @@ export default function CalendarView({
   const nextWeek = () => {
     const d = new Date(anchor);
     d.setDate(d.getDate() + 7);
-    setAnchor(d);
-  };
-
-  const prevDay = () => {
-    const d = new Date(anchor);
-    d.setDate(d.getDate() - 1);
-    setAnchor(d);
-  };
-  const nextDay = () => {
-    const d = new Date(anchor);
-    d.setDate(d.getDate() + 1);
     setAnchor(d);
   };
 
@@ -101,16 +84,6 @@ export default function CalendarView({
     setAnchor(d);
   };
 
-  const handleCellClick = (day, hourIdx) => {
-    const totalMinutes = 8 * 60 + hourIdx * 15;
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    const slotDate = new Date(day);
-    slotDate.setHours(hours, minutes, 0, 0);
-    onRequestClick(slotDate);
-  };
-
-  // Navigation based on view
   const handlePrev = () => {
     if (view === "Week") prevWeek();
     else if (view === "Month") prevMonth();
@@ -120,54 +93,32 @@ export default function CalendarView({
     else if (view === "Month") nextMonth();
   };
 
-  // Events for a given day + 15-minute cell
-  // Returns events that start or occur during this 15-minute slot
+  // Events for a given day + 30-minute cell
   const getEvents = (day, hourIdx) => {
-    const totalMinutes = 8 * 60 + hourIdx * 15;
+    const totalMinutes = 8 * 60 + hourIdx * 30;
     const startHours = Math.floor(totalMinutes / 60);
     const startMins = totalMinutes % 60;
     const cellStart = new Date(day);
     cellStart.setHours(startHours, startMins, 0, 0);
     const cellEnd = new Date(cellStart);
-    cellEnd.setMinutes(cellEnd.getMinutes() + 15);
+    cellEnd.setMinutes(cellEnd.getMinutes() + 30);
 
     return events.filter((ev) => {
       if (!isSameDay(ev.start, day)) return false;
-      // Event overlaps with this 30-minute cell
       return ev.start < cellEnd && ev.end > cellStart;
     });
   };
 
-  // Calculate the top position of an event within its cell
-  const eventTopPosition = (ev, hourIdx) => {
-    const totalMinutes = 8 * 60 + hourIdx * 15;
-    const cellStartMinutes = totalMinutes;
-    const eventStartMinutes = ev.start.getHours() * 60 + ev.start.getMinutes();
-    const minuteOffset = eventStartMinutes - cellStartMinutes;
-
-    // Position is proportional to minutes: (minutes / 15) * cellHeight
-    // Cell height is 20px for 15 minutes, so each minute is ~1.33px
-    return (minuteOffset / 15) * 20;
-  };
-
-  const eventHeightPx = (ev) => {
-    const mins = (ev.end - ev.start) / 60000;
-    // Each 15 minutes is 20px
-    const height = (mins / 15) * 20;
-    return Math.max(18, height);
-  };
-
   // Check if event starts in this cell
   const eventStartsInCell = (ev, hourIdx, day) => {
-    const totalMinutes = 8 * 60 + hourIdx * 15;
+    const totalMinutes = 8 * 60 + hourIdx * 30;
     const startHours = Math.floor(totalMinutes / 60);
     const startMins = totalMinutes % 60;
     const cellStart = new Date(day);
     cellStart.setHours(startHours, startMins, 0, 0);
     const cellEnd = new Date(cellStart);
-    cellEnd.setMinutes(cellEnd.getMinutes() + 15);
+    cellEnd.setMinutes(cellEnd.getMinutes() + 30);
 
-    // Check if event starts within this cell
     return ev.start >= cellStart && ev.start < cellEnd;
   };
 
@@ -186,10 +137,9 @@ export default function CalendarView({
     let currentEnd = ev.end;
     let currentHourIdx = startingHourIdx;
 
-    // Keep checking next cells for matching events
-    while (currentHourIdx < 24) {
+    while (currentHourIdx < HOURS.length) {
       currentHourIdx++;
-      if (currentHourIdx >= 24) break;
+      if (currentHourIdx >= HOURS.length) break;
 
       const nextCellEvents = getEvents(day, currentHourIdx);
       const matchingEvent = nextCellEvents.find(
@@ -248,6 +198,27 @@ export default function CalendarView({
           <span className="cal-navbar-title">Interview Approval App</span>
         </div>
         <div className="cal-navbar-spacer" />
+
+        {/* New Request button - visible to all users */}
+        <button
+          className="cal-navbar-pill cal-navbar-pill--primary"
+          onClick={() => onRequestClick && onRequestClick(null)}
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          New Request
+        </button>
+
         {user?.role === "admin" && (
           <button
             className="cal-navbar-pill"
@@ -255,19 +226,9 @@ export default function CalendarView({
           >
             <span className="dot" />
             {pendingCount} pending requests
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
           </button>
         )}
+
         <button className="cal-navbar-pill" onClick={onLogout}>
           🔒 Log Out
         </button>
@@ -324,19 +285,20 @@ export default function CalendarView({
             <span className="cal-header-month">
               {view === "Month"
                 ? MONTH_NAMES[anchor.getMonth()]
-                : MONTH_NAMES[daysToDisplay[0].getMonth()]}
+                : daysToDisplay.length > 0
+                  ? MONTH_NAMES[daysToDisplay[0].getMonth()]
+                  : ""}
               {view === "Month" && ` ${anchor.getFullYear()}`}
               {view !== "Month" &&
+                daysToDisplay.length > 1 &&
                 daysToDisplay[0].getMonth() !==
                   daysToDisplay[daysToDisplay.length - 1].getMonth() &&
-                ` – ${
-                  MONTH_NAMES[
-                    daysToDisplay[daysToDisplay.length - 1].getMonth()
-                  ]
-                }`}
+                ` – ${MONTH_NAMES[daysToDisplay[daysToDisplay.length - 1].getMonth()]}`}
             </span>
             <span className="cal-header-year">
-              {view !== "Month" && daysToDisplay[0].getFullYear()}
+              {view !== "Month" &&
+                daysToDisplay.length > 0 &&
+                daysToDisplay[0].getFullYear()}
             </span>
 
             <div className="cal-view-tabs">
@@ -354,9 +316,12 @@ export default function CalendarView({
 
           {/* Days grid (Y-axis) with time slots (X-axis) */}
           <div className="cal-grid-scroll">
-            {/* Time header (X-axis) - inside scroll container */}
+            {/* Time header (X-axis) */}
             <div className="cal-times-header">
-              <div className="cal-times-header-corner" />
+              <div
+                className="cal-times-header-corner"
+                style={{ width: 120, minWidth: 120 }}
+              />
               {HOURS.map((hour, i) => (
                 <div key={i} className="cal-time-header-cell">
                   {hour}
@@ -373,9 +338,10 @@ export default function CalendarView({
                 return (
                   <div
                     key={dayIdx}
-                    className={`cal-day-row ${
-                      !isCurrentMonth ? "other-month" : ""
-                    }`}
+                    className={`cal-day-row ${!isCurrentMonth ? "other-month" : ""}`}
+                    style={{
+                      gridTemplateColumns: `120px repeat(${HOURS.length}, 1fr)`,
+                    }}
                   >
                     {/* Day label (Y-axis) */}
                     <div
@@ -390,7 +356,6 @@ export default function CalendarView({
                     {/* Time slots for this day (X-axis) */}
                     {HOURS.map((hour, hourIdx) => {
                       const cellEvents = getEvents(day, hourIdx);
-                      // Only render events that start in this cell to avoid duplicates
                       const eventsStartingHere = cellEvents.filter((ev) =>
                         eventStartsInCell(ev, hourIdx, day),
                       );
@@ -399,7 +364,7 @@ export default function CalendarView({
                         <div
                           key={`cell-${dayIdx}-${hourIdx}`}
                           className={`cal-cell ${isToday ? "today-row" : ""}`}
-                          onClick={() => handleCellClick(day, hourIdx)}
+                          // No onClick handler — cells are not clickable
                         >
                           {eventsStartingHere.map((ev) => {
                             let roundClass = "pending";
@@ -416,25 +381,20 @@ export default function CalendarView({
                             )
                               roundClass = "round-custom";
 
-                            // Get merged end time for adjacent matching events
                             const mergedEnd = getMergedEventEnd(
                               ev,
                               day,
                               hourIdx,
                             );
-
-                            // Compute how many 15-min cells this event spans horizontally
                             const spanCells = Math.max(
                               1,
-                              Math.round((mergedEnd - ev.start) / (15 * 60000)),
+                              Math.round((mergedEnd - ev.start) / (30 * 60000)),
                             );
 
                             return (
                               <div
                                 key={ev.id}
-                                className={`cal-event ${roundClass} ${
-                                  spanCells > 1 ? "spanning" : ""
-                                }`}
+                                className={`cal-event ${roundClass} ${spanCells > 1 ? "spanning" : ""}`}
                                 style={{
                                   gridColumn: `${hourIdx + 2} / span ${spanCells}`,
                                 }}
@@ -490,8 +450,8 @@ export default function CalendarView({
                                   {ev.start.toLocaleTimeString([], {
                                     hour: "2-digit",
                                     minute: "2-digit",
-                                  })}{" "}
-                                  –{" "}
+                                  })}
+                                  {" – "}
                                   {mergedEnd.toLocaleTimeString([], {
                                     hour: "2-digit",
                                     minute: "2-digit",
@@ -507,12 +467,6 @@ export default function CalendarView({
                                       height: "4px",
                                       backgroundColor: "#9ca3af",
                                       borderRadius: "0 0 4px 4px",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      fontSize: "10px",
-                                      color: "#fff",
-                                      fontWeight: "600",
                                     }}
                                     title="Pending approval"
                                   />
