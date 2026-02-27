@@ -164,18 +164,9 @@ export default function LoginScreen({ onLogin }) {
               <img src={strideLogoLogin} />
             </div>
           </div>
-          <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
+          <div className="login-success-content">
             <div
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: "50%",
-                background: "linear-gradient(135deg,#f59e0b,#fbbf24)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto 16px",
-              }}
+              className="login-success-icon"
             >
               <svg
                 width="26"
@@ -190,22 +181,12 @@ export default function LoginScreen({ onLogin }) {
               </svg>
             </div>
             <div
-              style={{
-                fontSize: 17,
-                fontWeight: 700,
-                color: "#0f172a",
-                marginBottom: 8,
-              }}
+              className="login-success-title"
             >
               Request Submitted!
             </div>
             <div
-              style={{
-                fontSize: 13,
-                color: "#64748b",
-                lineHeight: 1.6,
-                marginBottom: 24,
-              }}
+              className="login-success-text"
             >
               Your signup request has been sent to the admin. You'll be able to
               log in once your account is approved.
@@ -240,15 +221,7 @@ export default function LoginScreen({ onLogin }) {
             </div>
           </div>
           <div className="login-title">Request Access</div>
-          <div
-            style={{
-              fontSize: 12,
-              color: "#94a3b8",
-              textAlign: "center",
-              marginBottom: 20,
-              marginTop: -8,
-            }}
-          >
+          <div className="login-signup-subtitle">
             Your request will be reviewed by an admin
           </div>
 
@@ -317,8 +290,8 @@ export default function LoginScreen({ onLogin }) {
             {loading ? "Submitting..." : "Request Access"}
           </button>
 
-          <div style={{ textAlign: "center", marginTop: 14 }}>
-            <span style={{ fontSize: 12, color: "#94a3b8" }}>
+          <div className="login-switch-row">
+            <span className="login-switch-text">
               Already have an account?{" "}
             </span>
             <button
@@ -326,16 +299,7 @@ export default function LoginScreen({ onLogin }) {
                 setMode("login");
                 setError("");
               }}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontSize: 12,
-                color: "#3b82f6",
-                fontWeight: 600,
-                fontFamily: "Poppins, sans-serif",
-                padding: 0,
-              }}
+              className="login-switch-btn"
             >
               Log in
             </button>
@@ -389,8 +353,8 @@ export default function LoginScreen({ onLogin }) {
           {loading ? "Logging in..." : "Log In"}
         </button>
 
-        <div style={{ textAlign: "center", marginTop: 14 }}>
-          <span style={{ fontSize: 12, color: "#94a3b8" }}>
+        <div className="login-switch-row">
+          <span className="login-switch-text">
             Don't have an account?{" "}
           </span>
           <button
@@ -398,16 +362,7 @@ export default function LoginScreen({ onLogin }) {
               setMode("signup");
               setError("");
             }}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              fontSize: 12,
-              color: "#3b82f6",
-              fontWeight: 600,
-              fontFamily: "Poppins, sans-serif",
-              padding: 0,
-            }}
+            className="login-switch-btn"
           >
             Sign Up
           </button>

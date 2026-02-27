@@ -22,20 +22,9 @@ export function PendingRequestsModal({
     return (
       <ModalChrome onClose={onClose}>
         <div className="modal-body">
-          <div style={{ textAlign: "center", padding: "40px 20px" }}>
-            <div
-              style={{
-                fontSize: "18px",
-                fontWeight: "600",
-                color: "#0f172a",
-                marginBottom: "8px",
-              }}
-            >
-              No Pending Requests
-            </div>
-            <div style={{ fontSize: "14px", color: "#64748b" }}>
-              All requests have been reviewed.
-            </div>
+          <div className="pending-empty-wrap">
+            <div className="pending-empty-title">No Pending Requests</div>
+            <div className="pending-empty-sub">All requests have been reviewed.</div>
           </div>
         </div>
       </ModalChrome>
@@ -44,51 +33,12 @@ export function PendingRequestsModal({
 
   return (
     <>
-      {/* ── Lightbox overlay ── */}
       {lightboxImg && (
-        <div
-          onClick={() => setLightboxImg(null)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            background: "rgba(0,0,0,0.82)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "zoom-out",
-          }}
-        >
-          <img
-            src={lightboxImg}
-            alt="Preview"
-            style={{
-              maxWidth: "90vw",
-              maxHeight: "88vh",
-              borderRadius: "12px",
-              boxShadow: "0 32px 80px rgba(0,0,0,0.6)",
-              objectFit: "contain",
-            }}
-          />
+        <div onClick={() => setLightboxImg(null)} className="pending-lightbox">
+          <img src={lightboxImg} alt="Preview" className="pending-lightbox-img" />
           <button
             onClick={() => setLightboxImg(null)}
-            style={{
-              position: "absolute",
-              top: "20px",
-              right: "24px",
-              background: "rgba(255,255,255,0.15)",
-              border: "none",
-              borderRadius: "50%",
-              width: "36px",
-              height: "36px",
-              color: "white",
-              fontSize: "20px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              lineHeight: 1,
-            }}
+            className="pending-lightbox-close"
           >
             ×
           </button>
@@ -117,61 +67,16 @@ export function PendingRequestsModal({
             </button>
           </div>
 
-          <div style={{ marginBottom: "20px" }}>
+          <div className="pending-list-wrap">
             {pendingEvents.map((event) => (
-              <div
-                key={event.id}
-                style={{
-                  background: "#f8fafc",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "12px",
-                  padding: "16px",
-                  marginBottom: "12px",
-                  position: "relative", // ✅ ADD THIS
-                }}
-              >
-                {/* ── Image banner — full width, tall, clickable ── */}
+              <div key={event.id} className="pending-card">
                 {event.image ? (
                   <div
                     onClick={() => setLightboxImg(event.image)}
-                    style={{
-                      width: "100%",
-                      height: "180px",
-                      borderRadius: "8px",
-                      overflow: "hidden",
-                      marginBottom: "14px",
-                      cursor: "zoom-in",
-                      position: "relative",
-                      background: "#e2e8f0",
-                    }}
+                    className="pending-image-wrap"
                   >
-                    <img
-                      src={event.image}
-                      alt={event.candidate}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        display: "block",
-                      }}
-                    />
-                    {/* zoom hint */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        bottom: "8px",
-                        right: "8px",
-                        background: "rgba(0,0,0,0.45)",
-                        borderRadius: "6px",
-                        padding: "3px 8px",
-                        fontSize: "11px",
-                        color: "white",
-                        fontWeight: 600,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
-                      }}
-                    >
+                    <img src={event.image} alt={event.candidate} className="pending-image" />
+                    <div className="pending-zoom-hint">
                       <svg
                         width="12"
                         height="12"
@@ -190,24 +95,7 @@ export function PendingRequestsModal({
                     </div>
                   </div>
                 ) : (
-                  /* No image placeholder */
-                  <div
-                    style={{
-                      width: "100%",
-                      height: "72px",
-                      borderRadius: "8px",
-                      marginBottom: "14px",
-                      background: "#fef2f2",
-                      border: "1.5px dashed #fca5a5",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "8px",
-                      color: "#dc2626",
-                      fontSize: "12px",
-                      fontWeight: 600,
-                    }}
-                  >
+                  <div className="pending-no-image">
                     <svg
                       width="16"
                       height="16"
@@ -224,58 +112,21 @@ export function PendingRequestsModal({
                     No image uploaded
                   </div>
                 )}
-                {/* Calendar Pill */}
+
                 <div
-                  style={{
-                    position: "absolute",
-                    bottpm: "12px",
-                    right: "12px",
-                    padding: "4px 12px",
-                    borderRadius: "999px",
-                    fontSize: "10px",
-                    fontWeight: "700",
-                    letterSpacing: "0.6px",
-                    textTransform: "uppercase",
-                    background:
-                      event.calendar === "boys"
-                        ? "linear-gradient(135deg,#3b82f6,#1d4ed8)"
-                        : "linear-gradient(135deg,#ec4899,#be185d)",
-                    color: "#fff",
-                    boxShadow:
-                      event.calendar === "boys"
-                        ? "0 4px 10px rgba(59,130,246,0.35)"
-                        : "0 4px 10px rgba(236,72,153,0.35)",
-                  }}
+                  className={`pending-calendar-pill ${
+                    event.calendar === "boys"
+                      ? "pending-calendar-pill-boys"
+                      : "pending-calendar-pill-girls"
+                  }`}
                 >
                   {event.calendar}
                 </div>
-                {/* ── Candidate info ── */}
-                <div style={{ marginBottom: "12px" }}>
-                  <div
-                    style={{
-                      fontSize: "14px",
-                      fontWeight: "700",
-                      color: "#0f172a",
-                    }}
-                  >
-                    {event.candidate}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "12px",
-                      color: "#64748b",
-                      marginTop: "3px",
-                    }}
-                  >
-                    {event.company} • {event.round}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "12px",
-                      color: "#64748b",
-                      marginTop: "3px",
-                    }}
-                  >
+
+                <div className="pending-candidate-wrap">
+                  <div className="pending-candidate-name">{event.candidate}</div>
+                  <div className="pending-candidate-meta">{event.company} • {event.round}</div>
+                  <div className="pending-candidate-meta">
                     {event.start.toLocaleDateString()} &nbsp;
                     {event.start.toLocaleTimeString([], {
                       hour: "2-digit",
@@ -289,50 +140,19 @@ export function PendingRequestsModal({
                   </div>
                 </div>
 
-                {/* ── Reject reason textarea ── */}
                 {rejectingId === event.id && (
-                  <div
-                    style={{
-                      background: "#fff",
-                      border: "1px solid #fecaca",
-                      borderRadius: "8px",
-                      padding: "12px",
-                      marginBottom: "12px",
-                    }}
-                  >
-                    <label
-                      style={{
-                        display: "block",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        color: "#334155",
-                        marginBottom: "6px",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      Rejection Reason *
-                    </label>
+                  <div className="pending-reject-box">
+                    <label className="pending-reject-label">Rejection Reason *</label>
                     <textarea
                       value={rejectReason}
                       onChange={(e) => setRejectReason(e.target.value)}
                       placeholder="Enter reason for rejection..."
-                      style={{
-                        width: "100%",
-                        padding: "10px",
-                        border: "1.5px solid #e2e8f0",
-                        borderRadius: "8px",
-                        fontSize: "13px",
-                        fontFamily: "Poppins, sans-serif",
-                        resize: "vertical",
-                        minHeight: "80px",
-                        boxSizing: "border-box",
-                      }}
+                      className="pending-reject-textarea"
                     />
                   </div>
                 )}
 
-                {/* ── Action buttons ── */}
-                <div style={{ display: "flex", gap: "8px" }}>
+                <div className="pending-actions">
                   {rejectingId === event.id ? (
                     <>
                       <button
@@ -340,38 +160,16 @@ export function PendingRequestsModal({
                           setRejectingId(null);
                           setRejectReason("");
                         }}
-                        style={{
-                          flex: 1,
-                          padding: "8px 12px",
-                          background: "#f1f5f9",
-                          border: "1px solid #e2e8f0",
-                          borderRadius: "8px",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                          cursor: "pointer",
-                          color: "#475569",
-                        }}
+                        className="pending-btn pending-btn-cancel"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleReject}
                         disabled={!rejectReason.trim()}
-                        style={{
-                          flex: 1,
-                          padding: "8px 12px",
-                          background: rejectReason.trim()
-                            ? "#ef4444"
-                            : "#fca5a5",
-                          border: "none",
-                          borderRadius: "8px",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                          cursor: rejectReason.trim()
-                            ? "pointer"
-                            : "not-allowed",
-                          color: "#fff",
-                        }}
+                        className={`pending-btn pending-btn-confirm ${
+                          rejectReason.trim() ? "" : "pending-btn-confirm-disabled"
+                        }`}
                       >
                         Confirm Rejection
                       </button>
@@ -380,33 +178,13 @@ export function PendingRequestsModal({
                     <>
                       <button
                         onClick={() => onApprove && onApprove(event)}
-                        style={{
-                          flex: 1,
-                          padding: "8px 12px",
-                          background: "#16a34a",
-                          border: "none",
-                          borderRadius: "8px",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                          cursor: "pointer",
-                          color: "#fff",
-                        }}
+                        className="pending-btn pending-btn-approve"
                       >
                         ✓ Approve
                       </button>
                       <button
                         onClick={() => setRejectingId(event.id)}
-                        style={{
-                          flex: 1,
-                          padding: "8px 12px",
-                          background: "#f1f5f9",
-                          border: "1px solid #fecaca",
-                          borderRadius: "8px",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                          cursor: "pointer",
-                          color: "#dc2626",
-                        }}
+                        className="pending-btn pending-btn-remove"
                       >
                         Remove
                       </button>
@@ -418,7 +196,7 @@ export function PendingRequestsModal({
           </div>
 
           <div className="modal-footer">
-            <div style={{ flex: 1 }} />
+            <div className="modal-flex-spacer" />
             <button className="btn-cancel" onClick={onClose}>
               Close
             </button>

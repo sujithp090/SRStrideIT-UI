@@ -76,16 +76,11 @@ export function EditRequestModal({ event, user, onClose, onDelete, onUpdate }) {
 
         {/* Event image */}
         {event.image && (
-          <div style={{ marginBottom: "20px" }}>
+          <div className="modal-event-image-wrap">
             <img
               src={event.image}
               alt="event"
-              style={{
-                width: "100%",
-                height: "200px",
-                objectFit: "cover",
-                borderRadius: "8px",
-              }}
+              className="modal-event-image"
             />
           </div>
         )}
@@ -206,7 +201,7 @@ export function EditRequestModal({ event, user, onClose, onDelete, onUpdate }) {
               🗑️ Delete
             </button>
           )}
-          <div style={{ flex: 1 }} />
+          <div className="modal-flex-spacer" />
           <button className="btn-cancel" onClick={onClose}>
             Cancel
           </button>
