@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { ModalChrome } from "./ModalChrome";
+import { getRestrictedCompanyInfo } from "../LogsPage/RestrictedCompanyPage";
 
 const toTimeInput = (d) => {
   const hh = String(d.getHours()).padStart(2, "0");
@@ -75,6 +76,9 @@ export function NewRequestModal({
   const [submitting, setSubmitting] = useState(false);
   const [conflictError, setConflictError] = useState("");
   const fileRef = useRef();
+
+  // Restricted company check — live as user types
+  const restrictedInfo = getRestrictedCompanyInfo(company);
 
   const handleFile = (f) => f && setFile(f);
   const handleDrop = (e) => {
@@ -187,6 +191,43 @@ export function NewRequestModal({
           line-height: 1.5;
         }
         .modal-conflict-error svg { flex-shrink: 0; margin-top: 1px; }
+
+        @keyframes warnSlideIn {
+          from { opacity: 0; transform: translateY(-5px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .modal-restricted-warn {
+          background: #fef2f2;
+          border: 1.5px solid #fca5a5;
+          border-radius: 10px;
+          padding: 10px 12px;
+          display: flex;
+          align-items: flex-start;
+          gap: 9px;
+          animation: warnSlideIn 0.18s ease;
+          margin-bottom: 12px;
+        }
+        .modal-restricted-warn-title {
+          font-size: 12.5px;
+          font-weight: 700;
+          color: #dc2626;
+          margin-bottom: 3px;
+        }
+        .modal-restricted-warn-reason {
+          font-size: 12px;
+          color: #b91c1c;
+          line-height: 1.5;
+        }
+        .modal-restricted-warn-exempt {
+          font-size: 11.5px;
+          color: #6b7280;
+          margin-top: 5px;
+          font-style: italic;
+        }
+        .modal-input--restricted {
+          border-color: #fca5a5 !important;
+          background: #fff8f8 !important;
+        }
       `}</style>
 
       <div className="modal-body">
@@ -372,16 +413,52 @@ export function NewRequestModal({
               onChange={(e) => setCandidate(e.target.value)}
             />
           </div>
+
+          {/* ── Company field with live restricted-company check ── */}
           <div className="modal-field">
             <label className="modal-label">Company *</label>
             <input
-              className="modal-input"
+              className={`modal-input${restrictedInfo ? " modal-input--restricted" : ""}`}
               placeholder="e.g. Acme Corp"
               value={company}
-              onChange={(e) => setCompany(e.target.value)}
+              onChange={(e) => {
+                setCompany(e.target.value);
+                setConflictError("");
+              }}
             />
           </div>
         </div>
+        {restrictedInfo && (
+          <div className="modal-restricted-warn">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#dc2626"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              style={{ flexShrink: 0, marginTop: 2 }}
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <div>
+              <div className="modal-restricted-warn-title">
+                Restricted Company
+              </div>
+              <div className="modal-restricted-warn-reason">
+                <strong>{restrictedInfo.name}</strong> — {restrictedInfo.reason}
+                . Do not schedule interviews for this company.
+              </div>
+              <div className="modal-restricted-warn-exempt">
+                Genuine candidates who have already cleared the relevant checks
+                are exempted. Contact admin if unsure.
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Round */}
         <div className="modal-input-row">

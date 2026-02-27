@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { PendingRequestsModal } from "../RequestModal/RequestModal";
 import UsersPanel from "../Users/UsersPanel";
 import LogsPage from "../LogsPage/LogsPage";
+import RestrictedCompaniesPage from "../LogsPage/RestrictedCompanyPage";
 
 const SLOT_COUNT = 26;
 const GRID_START = 8 * 60; // 8:00 AM in minutes
@@ -77,6 +78,7 @@ export default function CalendarView({
   const [activeNav, setActiveNav] = useState("calendar");
   const [cellWidth, setCellWidth] = useState(CELL_WIDTH);
   const [showLogs, setShowLogs] = useState(false);
+  const [showRestricted, setShowRestricted] = useState(false);
   const cellRef = useRef(null);
 
   // Measure actual rendered cell width after mount
@@ -191,7 +193,7 @@ export default function CalendarView({
             <div
               style={{
                 display: "flex",
-                flexDirection: "column", // ✅ stack vertically
+                flexDirection: "column",
                 gap: 6,
               }}
             >
@@ -200,16 +202,14 @@ export default function CalendarView({
                   key={c}
                   onClick={() => setActiveCalendar(c)}
                   style={{
-                    width: 60, // consistent width
+                    width: 60,
                     height: 34,
                     borderRadius: 8,
                     border:
                       activeCalendar === c
                         ? "2px solid #0ea5e9"
                         : "1px solid #e2e8f0",
-
                     background: activeCalendar === c ? "#e0f2fe" : "#f8fafc",
-
                     color: activeCalendar === c ? "#0369a1" : "#475569",
                     fontSize: 12,
                     fontWeight: 600,
@@ -222,6 +222,8 @@ export default function CalendarView({
             </div>
           )}
           <div className="cal-navbar-spacer" />
+
+          {/* ── Logs ── */}
           <button
             className={`cal-sidebar-btn ${activeNav === "logs" ? "active" : ""}`}
             title="Activity Logs"
@@ -234,6 +236,38 @@ export default function CalendarView({
               <path d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
+
+          {/* ── Restricted Companies ── */}
+          <button
+            className={`cal-sidebar-btn ${activeNav === "restricted" ? "active" : ""}`}
+            title="Restricted Companies"
+            onClick={() => {
+              setActiveNav("restricted");
+              setShowRestricted(true);
+            }}
+            style={activeNav === "restricted" ? {} : { color: "#dc2626" }}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              {/* Building */}
+              <path d="M3 21h13" />
+              <path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v6" />
+              <path d="M9 21v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4" />
+              <line x1="9" y1="8" x2="9" y2="8.01" />
+              <line x1="9" y1="12" x2="9" y2="12.01" />
+              {/* X mark top-right */}
+              <line x1="17" y1="13" x2="21" y2="17" />
+              <line x1="21" y1="13" x2="17" y2="17" />
+            </svg>
+          </button>
+
+          {/* ── User Management (admin only) ── */}
           {user?.role === "admin" && (
             <button
               className={`cal-sidebar-btn ${activeNav === "settings" ? "active" : ""}`}
@@ -286,7 +320,6 @@ export default function CalendarView({
                 : daysToDisplay.length > 0
                   ? MONTH_NAMES[daysToDisplay[0].getMonth()]
                   : ""}
-              {view === "Month" && ` ${anchor.getFullYear()}`}
               {view !== "Month" &&
                 daysToDisplay.length > 1 &&
                 daysToDisplay[0].getMonth() !==
@@ -294,9 +327,11 @@ export default function CalendarView({
                 ` – ${MONTH_NAMES[daysToDisplay[daysToDisplay.length - 1].getMonth()]}`}
             </span>
             <span className="cal-header-year">
-              {view !== "Month" &&
-                daysToDisplay.length > 0 &&
-                daysToDisplay[0].getFullYear()}
+              {view === "Month"
+                ? anchor.getFullYear()
+                : daysToDisplay.length > 0
+                  ? daysToDisplay[0].getFullYear()
+                  : ""}
             </span>
             <div className="cal-view-tabs">
               {["Week", "Month"].map((v) => (
@@ -568,10 +603,20 @@ export default function CalendarView({
           }}
         />
       )}
+
       {showLogs && (
         <LogsPage
           onClose={() => {
             setShowLogs(false);
+            setActiveNav("calendar");
+          }}
+        />
+      )}
+
+      {showRestricted && (
+        <RestrictedCompaniesPage
+          onClose={() => {
+            setShowRestricted(false);
             setActiveNav("calendar");
           }}
         />
