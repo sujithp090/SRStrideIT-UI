@@ -80,6 +80,7 @@ export default function CalendarView({
   const [showLogs, setShowLogs] = useState(false);
   const [showRestricted, setShowRestricted] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
+  const [showMobileNav, setShowMobileNav] = useState(false);
 
   const weekDays = getWeekDays(anchor);
 
@@ -141,6 +142,65 @@ export default function CalendarView({
     }
   }, [visibleCalendars]);
 
+  useEffect(() => {
+    if (!showMobileNav) return;
+    const onEsc = (event) => {
+      if (event.key === "Escape") setShowMobileNav(false);
+    };
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [showMobileNav]);
+
+  const closeMobileNav = () => setShowMobileNav(false);
+
+  const navActionItems = (
+    <>
+      <button
+        className="cal-navbar-pill cal-navbar-pill--primary"
+        onClick={() => {
+          onRequestClick && onRequestClick(null, activeCalendar);
+          closeMobileNav();
+        }}
+      >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        >
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        New Request
+      </button>
+      {user?.role === "admin" && (
+        <button
+          className="cal-navbar-pill"
+          onClick={() => {
+            setShowPendingModal(true);
+            closeMobileNav();
+          }}
+        >
+          <span className="dot" />
+          {pendingCount} pending requests
+        </button>
+      )}
+      {user?.role === "admin" && <SignupRequestsBell user={user} />}
+      <button
+        className="cal-navbar-pill"
+        onClick={() => {
+          closeMobileNav();
+          onLogout();
+        }}
+      >
+        🔒 Log Out
+      </button>
+    </>
+  );
+
   return (
     <div className="cal-root">
       {/* ── Navbar ── */}
@@ -151,38 +211,47 @@ export default function CalendarView({
           </span>
         </div>
         <div className="cal-navbar-spacer" />
+        <div className="cal-navbar-actions">{navActionItems}</div>
         <button
-          className="cal-navbar-pill cal-navbar-pill--primary"
-          onClick={() => onRequestClick && onRequestClick(null, activeCalendar)}
+          className="cal-navbar-menu-btn"
+          onClick={() => setShowMobileNav(true)}
+          aria-label="Open navigation menu"
+          aria-expanded={showMobileNav}
+          aria-controls="cal-mobile-drawer"
         >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <line x1="4" y1="7" x2="20" y2="7" />
+            <line x1="4" y1="12" x2="20" y2="12" />
+            <line x1="4" y1="17" x2="20" y2="17" />
           </svg>
-          New Request
-        </button>
-        {user?.role === "admin" && (
-          <button
-            className="cal-navbar-pill"
-            onClick={() => setShowPendingModal(true)}
-          >
-            <span className="dot" />
-            {pendingCount} pending requests
-          </button>
-        )}
-        {user?.role === "admin" && <SignupRequestsBell user={user} />}
-        <button className="cal-navbar-pill" onClick={onLogout}>
-          🔒 Log Out
         </button>
       </div>
+
+      {showMobileNav && (
+        <>
+          <button
+            className="cal-mobile-drawer-overlay"
+            aria-label="Close navigation menu"
+            onClick={closeMobileNav}
+          />
+          <aside id="cal-mobile-drawer" className="cal-mobile-drawer" role="dialog">
+            <div className="cal-mobile-drawer-header">
+              <h2>Menu</h2>
+              <button
+                className="cal-mobile-drawer-close"
+                onClick={closeMobileNav}
+                aria-label="Close navigation menu"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="cal-mobile-drawer-actions">{navActionItems}</div>
+          </aside>
+        </>
+      )}
 
       <div className="cal-shell">
         {/* ── Sidebar ── */}
