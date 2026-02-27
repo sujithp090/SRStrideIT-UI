@@ -8,7 +8,7 @@ import {
 } from "./components/RequestModal/RequestModal";
 
 /* ─────────────────────────────────────────────────────────── */
-/* Utils */
+/* Utils                                                        */
 /* ─────────────────────────────────────────────────────────── */
 
 const rowToEvent = (row) => ({
@@ -28,7 +28,7 @@ const hasOverlap = (start1, end1, start2, end2) =>
   start1 < end2 && end1 > start2;
 
 /* ─────────────────────────────────────────────────────────── */
-/* App */
+/* App                                                          */
 /* ─────────────────────────────────────────────────────────── */
 
 export default function App() {
@@ -45,7 +45,7 @@ export default function App() {
   const [blockedSlots, setBlockedSlots] = useState([]);
 
   /* ─────────────────────────────────────────────────────────── */
-  /* Activity Logger */
+  /* Activity Logger                                             */
   /* ─────────────────────────────────────────────────────────── */
 
   const insertLog = async ({
@@ -55,7 +55,6 @@ export default function App() {
     metadata = {},
   }) => {
     if (!user) return;
-
     await supabase.from("activity_logs").insert({
       action,
       entity_type,
@@ -66,7 +65,7 @@ export default function App() {
   };
 
   /* ─────────────────────────────────────────────────────────── */
-  /* Session Restore */
+  /* Session Restore                                             */
   /* ─────────────────────────────────────────────────────────── */
 
   useEffect(() => {
@@ -74,10 +73,8 @@ export default function App() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-
       if (session?.user) {
         await loadProfile(session.user.id);
-
         await insertLog({
           action: "login",
           entity_type: "auth",
@@ -86,7 +83,6 @@ export default function App() {
       }
       setAuthLoading(false);
     };
-
     init();
 
     const {
@@ -98,7 +94,6 @@ export default function App() {
         setBlockedSlots([]);
       }
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
@@ -112,26 +107,33 @@ export default function App() {
   };
 
   /* ─────────────────────────────────────────────────────────── */
-  /* Fetch Interviews */
+  /* Fetch Interviews                                            */
   /* ─────────────────────────────────────────────────────────── */
 
   useEffect(() => {
     if (!user) return;
-    fetchEvents();
-    fetchBlockedSlots();
+    cleanupPastData().then(() => {
+      fetchEvents();
+      fetchBlockedSlots();
+    });
   }, [user]);
 
   const fetchEvents = async () => {
     setEventsLoading(true);
-
     const { data, error } = await supabase
       .from("interviews")
       .select("*")
       .order("start_time", { ascending: true });
-
     if (!error) setEvents(data.map(rowToEvent));
-
     setEventsLoading(false);
+  };
+
+  /* ─────────────────────────────────────────────────────────── */
+  /* Cleanup Past Data                                           */
+  /* ─────────────────────────────────────────────────────────── */
+
+  const cleanupPastData = async () => {
+    await supabase.rpc("cleanup_past_data");
   };
 
   /* ─────────────────────────────────────────────────────────── */
@@ -143,7 +145,19 @@ export default function App() {
       .from("blocked_slots")
       .select("*")
       .order("created_at", { ascending: true });
-    if (!error && data) setBlockedSlots(data);
+    if (!error && data) {
+      setBlockedSlots(
+        data.map((row) => ({
+          id: row.id,
+          calendar: row.calendar,
+          date: row.date,
+          mode: row.mode,
+          startTime: row.start_time,
+          endTime: row.end_time,
+          label: row.label,
+        })),
+      );
+    }
   };
 
   const handleSaveBlock = async (newBlock, deleteId) => {
@@ -203,7 +217,6 @@ export default function App() {
         hour: "2-digit",
         minute: "2-digit",
       });
-
       return {
         error: `This time slot is already booked by ${conflictingEvent.candidate} (${conflictingEvent.company}) from ${startStr} to ${endStr}.`,
       };
@@ -246,7 +259,6 @@ export default function App() {
     if (error) return { error: "Failed to submit request." };
 
     const newEvent = rowToEvent(data);
-
     setEvents((prev) => [...prev, newEvent]);
     setShowNewReq(false);
     setSelectedTimeSlot(null);
@@ -267,7 +279,7 @@ export default function App() {
   };
 
   /* ─────────────────────────────────────────────────────────── */
-  /* Approve / Reject */
+  /* Approve / Reject                                            */
   /* ─────────────────────────────────────────────────────────── */
 
   const handleUpdateEvents = async (updatedEvents) => {
@@ -279,14 +291,11 @@ export default function App() {
           orig.rejectionReason !== ev.rejectionReason)
       );
     });
-
     if (!changed) return;
 
     if (changed.status === "rejected") {
       await supabase.from("interviews").delete().eq("id", changed.id);
-
       setEvents((prev) => prev.filter((e) => e.id !== changed.id));
-
       await insertLog({
         action: "rejected",
         entity_type: "interview",
@@ -307,9 +316,7 @@ export default function App() {
           rejection_reason: changed.rejectionReason ?? null,
         })
         .eq("id", changed.id);
-
       setEvents(updatedEvents);
-
       await insertLog({
         action: "approved",
         entity_type: "interview",
@@ -326,7 +333,7 @@ export default function App() {
   };
 
   /* ─────────────────────────────────────────────────────────── */
-  /* Edit */
+  /* Edit                                                        */
   /* ─────────────────────────────────────────────────────────── */
 
   const handleUpdateSingleEvent = async (updatedEvent) => {
@@ -356,7 +363,6 @@ export default function App() {
     setEvents((prev) =>
       prev.map((e) => (e.id === updatedEvent.id ? updatedEvent : e)),
     );
-
     setSelectedEvent(null);
 
     await insertLog({
@@ -372,17 +378,15 @@ export default function App() {
         new_end: updatedEvent.end.toISOString(),
       },
     });
-
     return { error: null };
   };
 
   /* ─────────────────────────────────────────────────────────── */
-  /* Delete */
+  /* Delete                                                      */
   /* ─────────────────────────────────────────────────────────── */
 
   const handleDeleteEvent = async (ev) => {
     await supabase.from("interviews").delete().eq("id", ev.id);
-
     setEvents((prev) => prev.filter((e) => e.id !== ev.id));
     setSelectedEvent(null);
     await insertLog({
@@ -400,7 +404,7 @@ export default function App() {
   };
 
   /* ─────────────────────────────────────────────────────────── */
-  /* Logout */
+  /* Logout                                                      */
   /* ─────────────────────────────────────────────────────────── */
 
   const handleLogout = async () => {
@@ -412,7 +416,7 @@ export default function App() {
   };
 
   /* ─────────────────────────────────────────────────────────── */
-  /* Loading */
+  /* Loading                                                     */
   /* ─────────────────────────────────────────────────────────── */
 
   const Spinner = ({ label }) => (

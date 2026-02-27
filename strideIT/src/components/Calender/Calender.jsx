@@ -101,6 +101,7 @@ export default function CalendarView({
   const weekDays = getWeekDays(anchor);
 
   const handlePrev = () => {
+    if (isPrevDisabled) return;
     const d = new Date(anchor);
     if (view === "Week") d.setDate(d.getDate() - 7);
     else d.setMonth(d.getMonth() - 1);
@@ -112,6 +113,19 @@ export default function CalendarView({
     else d.setMonth(d.getMonth() + 1);
     setAnchor(d);
   };
+
+  // Disable prev if the current week/month already contains today (can't go further back)
+  const isPrevDisabled = (() => {
+    if (view === "Week") {
+      const currentWeekDays = getWeekDays(anchor);
+      return currentWeekDays.some((day) => isSameDay(day, today));
+    } else {
+      return (
+        anchor.getFullYear() === today.getFullYear() &&
+        anchor.getMonth() === today.getMonth()
+      );
+    }
+  })();
 
   const pendingCount = events.filter((e) => e.status === "pending").length;
 
@@ -306,7 +320,15 @@ export default function CalendarView({
         {/* ── Main calendar ── */}
         <div className="cal-main">
           <div className="cal-header">
-            <button className="cal-nav-btn" onClick={handlePrev}>
+            <button
+              className="cal-nav-btn"
+              onClick={handlePrev}
+              disabled={isPrevDisabled}
+              style={{
+                opacity: isPrevDisabled ? 0.3 : 1,
+                cursor: isPrevDisabled ? "not-allowed" : "pointer",
+              }}
+            >
               <svg
                 width="14"
                 height="14"
