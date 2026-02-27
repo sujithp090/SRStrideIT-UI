@@ -3,6 +3,7 @@ import { PendingRequestsModal } from "../RequestModal/RequestModal";
 import UsersPanel from "../Users/UsersPanel";
 import LogsPage from "../LogsPage/LogsPage";
 import RestrictedCompaniesPage from "../LogsPage/RestrictedCompanyPage";
+import { BlockSlotModal } from "../RequestModal/BlockSlotModal";
 import strideMainLogo from "../../assets/strideMainLogo.svg";
 
 const SLOT_COUNT = 26;
@@ -52,11 +53,14 @@ function isSameDay(a, b) {
   );
 }
 
-// Convert a Date's local time to pixel offset from left edge of the time grid
 function dateToPixel(date, cw) {
   const minutesFromMidnight = date.getHours() * 60 + date.getMinutes();
   const slotsFromStart = (minutesFromMidnight - GRID_START) / 30;
   return slotsFromStart * cw;
+}
+
+function toDayStr(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 export default function CalendarView({
@@ -68,6 +72,8 @@ export default function CalendarView({
   onUpdateEvents,
   activeCalendar,
   setActiveCalendar,
+  blockedSlots = [],
+  onSaveBlock,
 }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -80,6 +86,7 @@ export default function CalendarView({
   const [cellWidth, setCellWidth] = useState(CELL_WIDTH);
   const [showLogs, setShowLogs] = useState(false);
   const [showRestricted, setShowRestricted] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
   const cellRef = useRef(null);
 
   // Measure actual rendered cell width after mount
@@ -131,11 +138,13 @@ export default function CalendarView({
       : user?.calendar_access?.length
         ? user.calendar_access
         : ["boys"];
+
   useEffect(() => {
     if (!visibleCalendars.includes(activeCalendar)) {
       setActiveCalendar(visibleCalendars[0]);
     }
   }, [visibleCalendars]);
+
   return (
     <div className="cal-root">
       {/* ── Navbar ── */}
@@ -182,13 +191,7 @@ export default function CalendarView({
         {/* ── Sidebar ── */}
         <div className="cal-sidebar">
           {visibleCalendars.length >= 1 && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-              }}
-            >
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {visibleCalendars.map((c) => (
                 <button
                   key={c}
@@ -247,8 +250,9 @@ export default function CalendarView({
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+              <path d="M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4z" />
+
+              <rect x="9" y="10" width="6" height="6" rx="1" />
             </svg>
           </button>
 
@@ -265,6 +269,34 @@ export default function CalendarView({
               <svg viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="3" />
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </button>
+          )}
+
+          {/* ── Block Slot (admin only) ── */}
+          {user?.role === "admin" && (
+            <button
+              className={`cal-sidebar-btn ${activeNav === "block" ? "active" : ""}`}
+              title="Block Time Slots"
+              onClick={() => {
+                setActiveNav("block");
+                setShowBlockModal(true);
+              }}
+              style={activeNav === "block" ? {} : { color: "#dc2626" }}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+                <line x1="9" y1="16" x2="15" y2="16" />
               </svg>
             </button>
           )}
@@ -334,12 +366,10 @@ export default function CalendarView({
           <div className="cal-grid-scroll">
             {/* ── Time header ── */}
             <div className="cal-times-header">
-              {/* Sticky day-label corner */}
               <div
                 className="cal-times-header-corner"
                 style={{ width: 120, minWidth: 120 }}
               />
-              {/* Time labels — fixed width matching CELL_WIDTH */}
               <div style={{ display: "flex", flexShrink: 0 }}>
                 {HOURS.map((hour, i) => (
                   <div
@@ -371,6 +401,15 @@ export default function CalendarView({
                     isSameDay(ev.start, day) &&
                     ev.status !== "rejected",
                 );
+
+                // Blocked slots for this day
+                const dayStr = toDayStr(day);
+                const dayBlocks = blockedSlots.filter(
+                  (b) =>
+                    b.date === dayStr &&
+                    (b.calendar === activeCalendar || b.calendar === "both"),
+                );
+
                 return (
                   <div
                     key={dayIdx}
@@ -388,7 +427,7 @@ export default function CalendarView({
                       <div className="cal-day-row-date">{day.getDate()}</div>
                     </div>
 
-                    {/* Time grid area — relative container for absolute events */}
+                    {/* Time grid area */}
                     <div
                       style={{
                         position: "relative",
@@ -416,12 +455,87 @@ export default function CalendarView({
                         ))}
                       </div>
 
+                      {/* ── Blocked slot red bars ── */}
+                      {dayBlocks.map((b) => {
+                        if (b.mode === "day") {
+                          return (
+                            <div
+                              key={b.id}
+                              style={{
+                                position: "absolute",
+                                top: 0,
+                                bottom: 0,
+                                left: 0,
+                                width: totalGridWidth,
+                                background: "rgba(220,38,38,0.10)",
+                                borderLeft: "4px solid #dc2626",
+                                zIndex: 3,
+                                display: "flex",
+                                alignItems: "center",
+                                paddingLeft: 10,
+                                pointerEvents: "none",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  color: "#dc2626",
+                                }}
+                              >
+                                🚫 {b.label}
+                              </span>
+                            </div>
+                          );
+                        }
+                        const [sh, sm] = b.startTime.split(":").map(Number);
+                        const [eh, em] = b.endTime.split(":").map(Number);
+                        const startMins = sh * 60 + sm;
+                        const endMins = eh * 60 + em;
+                        const leftPx =
+                          ((startMins - GRID_START) / 30) * cellWidth;
+                        const widthPx =
+                          ((endMins - startMins) / 30) * cellWidth;
+                        if (leftPx < 0 || leftPx >= totalGridWidth) return null;
+                        return (
+                          <div
+                            key={b.id}
+                            style={{
+                              position: "absolute",
+                              top: 0,
+                              bottom: 0,
+                              left: leftPx,
+                              width: Math.max(widthPx, 20),
+                              background: "rgba(220,38,38,0.12)",
+                              borderLeft: "3px solid #dc2626",
+                              borderRight: "1px solid #fca5a5",
+                              zIndex: 3,
+                              display: "flex",
+                              alignItems: "center",
+                              paddingLeft: 6,
+                              pointerEvents: "none",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: 10.5,
+                                fontWeight: 700,
+                                color: "#dc2626",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              🚫 {b.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+
                       {/* Events — absolutely positioned using pixel offset */}
                       {dayEvents.map((ev) => {
                         const leftPx = dateToPixel(ev.start, cellWidth);
                         const widthPx = dateToPixel(ev.end, cellWidth) - leftPx;
 
-                        // Skip if outside visible range
                         if (leftPx < 0 || leftPx >= totalGridWidth) return null;
 
                         let roundClass = "pending";
@@ -442,7 +556,7 @@ export default function CalendarView({
                               left: leftPx,
                               width: Math.max(widthPx - 2, 40),
                               overflow: "visible",
-                              zIndex: 2,
+                              zIndex: 4,
                             }}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -604,6 +718,17 @@ export default function CalendarView({
             setShowRestricted(false);
             setActiveNav("calendar");
           }}
+        />
+      )}
+
+      {showBlockModal && (
+        <BlockSlotModal
+          onClose={() => {
+            setShowBlockModal(false);
+            setActiveNav("calendar");
+          }}
+          blockedSlots={blockedSlots}
+          onSave={onSaveBlock}
         />
       )}
     </div>

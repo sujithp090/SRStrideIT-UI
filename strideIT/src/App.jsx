@@ -24,9 +24,8 @@ const rowToEvent = (row) => ({
   end: new Date(row.end_time),
 });
 
-const hasOverlap = (start1, end1, start2, end2) => {
-  return start1 < end2 && end1 > start2;
-};
+const hasOverlap = (start1, end1, start2, end2) =>
+  start1 < end2 && end1 > start2;
 
 /* ─────────────────────────────────────────────────────────── */
 /* App */
@@ -41,6 +40,9 @@ export default function App() {
   const [events, setEvents] = useState([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [activeCalendar, setActiveCalendar] = useState("boys");
+
+  // ── Blocked slots — lifted here so App can pass to NewRequestModal ──
+  const [blockedSlots, setBlockedSlots] = useState([]);
 
   /* ─────────────────────────────────────────────────────────── */
   /* Activity Logger */
@@ -93,6 +95,7 @@ export default function App() {
       if (!session) {
         setUser(null);
         setEvents([]);
+        setBlockedSlots([]);
       }
     });
 
@@ -105,10 +108,7 @@ export default function App() {
       .select("id, name, email, role, username")
       .eq("id", userId)
       .single();
-
-    if (profile) {
-      setUser(profile);
-    }
+    if (profile) setUser(profile);
   };
 
   /* ─────────────────────────────────────────────────────────── */
@@ -118,6 +118,7 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     fetchEvents();
+    fetchBlockedSlots();
   }, [user]);
 
   const fetchEvents = async () => {
@@ -134,12 +135,62 @@ export default function App() {
   };
 
   /* ─────────────────────────────────────────────────────────── */
-  /* Create Request */
+  /* Fetch + Save Blocked Slots                                  */
+  /* ─────────────────────────────────────────────────────────── */
+
+  const fetchBlockedSlots = async () => {
+    const { data, error } = await supabase
+      .from("blocked_slots")
+      .select("*")
+      .order("created_at", { ascending: true });
+    if (!error && data) setBlockedSlots(data);
+  };
+
+  const handleSaveBlock = async (newBlock, deleteId) => {
+    if (deleteId) {
+      await supabase.from("blocked_slots").delete().eq("id", deleteId);
+      setBlockedSlots((prev) => prev.filter((b) => b.id !== deleteId));
+    } else if (newBlock) {
+      const { data, error } = await supabase
+        .from("blocked_slots")
+        .insert({
+          id: newBlock.id,
+          calendar: newBlock.calendar,
+          date: newBlock.date,
+          mode: newBlock.mode,
+          start_time: newBlock.startTime,
+          end_time: newBlock.endTime,
+          label: newBlock.label,
+        })
+        .select()
+        .single();
+      if (!error && data) {
+        // Normalise back to camelCase to match local usage
+        setBlockedSlots((prev) => [
+          ...prev,
+          {
+            id: data.id,
+            calendar: data.calendar,
+            date: data.date,
+            mode: data.mode,
+            startTime: data.start_time,
+            endTime: data.end_time,
+            label: data.label,
+          },
+        ]);
+      }
+    }
+  };
+
+  /* ─────────────────────────────────────────────────────────── */
+  /* Create Request                                              */
   /* ─────────────────────────────────────────────────────────── */
 
   const handleSubmitRequest = async (formData) => {
+    // Check time conflict with existing events
     const conflictingEvent = events.find((ev) => {
       if (ev.status === "rejected") return false;
+      if (ev.calendar !== formData.calendar) return false;
       return hasOverlap(formData.start, formData.end, ev.start, ev.end);
     });
 
@@ -155,6 +206,25 @@ export default function App() {
 
       return {
         error: `This time slot is already booked by ${conflictingEvent.candidate} (${conflictingEvent.company}) from ${startStr} to ${endStr}.`,
+      };
+    }
+
+    // Check if slot is blocked by admin
+    const dateStr = formData.date;
+    const startStr = formData.startTime;
+    const endStr = formData.endTime;
+
+    const blockHit = blockedSlots.find((b) => {
+      if (b.calendar !== formData.calendar && b.calendar !== "both")
+        return false;
+      if (b.date !== dateStr) return false;
+      if (b.mode === "day") return true;
+      return startStr < b.endTime && endStr > b.startTime;
+    });
+
+    if (blockHit) {
+      return {
+        error: `This time slot is blocked by admin: "${blockHit.label || "Blocked"}". Please choose a different time.`,
       };
     }
 
@@ -262,16 +332,11 @@ export default function App() {
   const handleUpdateSingleEvent = async (updatedEvent) => {
     const original = events.find((e) => e.id === updatedEvent.id);
     const conflictingEvent = events.find((ev) => {
-      if (ev.id === updatedEvent.id) return false;
-      if (ev.status === "rejected") return false;
+      if (ev.id === updatedEvent.id || ev.status === "rejected") return false;
       return hasOverlap(updatedEvent.start, updatedEvent.end, ev.start, ev.end);
     });
-
-    if (conflictingEvent) {
-      return {
-        error: "This time slot overlaps with another interview.",
-      };
-    }
+    if (conflictingEvent)
+      return { error: "This time slot overlaps with another interview." };
 
     await supabase
       .from("interviews")
@@ -339,14 +404,11 @@ export default function App() {
   /* ─────────────────────────────────────────────────────────── */
 
   const handleLogout = async () => {
-    await insertLog({
-      action: "logout",
-      entity_type: "auth",
-    });
-
+    await insertLog({ action: "logout", entity_type: "auth" });
     await supabase.auth.signOut();
     setUser(null);
     setEvents([]);
+    setBlockedSlots([]);
   };
 
   /* ─────────────────────────────────────────────────────────── */
@@ -389,6 +451,8 @@ export default function App() {
         onUpdateEvents={handleUpdateEvents}
         activeCalendar={activeCalendar}
         setActiveCalendar={setActiveCalendar}
+        blockedSlots={blockedSlots}
+        onSaveBlock={handleSaveBlock}
       />
 
       {showNewReq && (
@@ -401,6 +465,7 @@ export default function App() {
           selectedTimeSlot={selectedTimeSlot}
           existingEvents={events}
           calendar={activeCalendar}
+          blockedSlots={blockedSlots}
         />
       )}
 
