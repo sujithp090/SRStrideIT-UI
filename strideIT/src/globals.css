@@ -1015,15 +1015,16 @@ select.modal-input::-ms-expand {
 
 .login-wrapper {
   width: 100%;
-  height: 100%;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   /* background: linear-gradient(145deg, #0f2744 0%, #1e3a6e 40%, #1d4ed8 100%); */
   font-family: "Poppins", system-ui, Avenir, Helvetica, Arial, sans-serif;
   position: relative;
-  overflow: hidden;
-  padding: 20px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 }
 
 .login-wrapper::before {
@@ -1062,6 +1063,7 @@ select.modal-input::-ms-expand {
   padding: 48px 44px 40px;
   width: 100%;
   max-width: 420px;
+  margin-block: auto;
   box-shadow: var(--shadow-lg);
   position: relative;
   z-index: 1;
@@ -1266,7 +1268,7 @@ select.modal-input::-ms-expand {
   z-index: 1000;
   animation: fadeIn 0.2s ease both;
   font-family: "Poppins", system-ui, Avenir, Helvetica, Arial, sans-serif;
-  padding: 16px;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   overflow-y: auto;
 }
 
@@ -1286,6 +1288,7 @@ select.modal-input::-ms-expand {
   width: 100%;
   max-width: 520px;
   max-height: 92vh;
+  margin: auto;
   overflow-y: auto;
   box-shadow:
     0 32px 80px rgba(15, 39, 68, 0.3),
@@ -2370,7 +2373,7 @@ select.modal-input::-ms-expand {
   background: #fff;
   border-radius: 16px;
   padding: 28px;
-  width: 360px;
+  width: min(360px, 92vw);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
 }
 .users-panel-delete-title { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
@@ -2434,6 +2437,34 @@ select.modal-input::-ms-expand {
 .badge-login { background: #ede9fe; color: #6d28d9; }
 .badge-updated { background: #fef3c7; color: #b45309; }
 .logs-empty, .logs-loading { padding: 40px; text-align: center; color: #64748b; }
+
+@media (max-width: 767px) {
+  .logs-wrapper {
+    padding: 12px;
+  }
+
+  .logs-header {
+    padding: 14px;
+  }
+
+  .logs-title {
+    font-size: 16px;
+  }
+
+  .logs-table {
+    overflow-x: auto;
+  }
+
+  .logs-row {
+    grid-template-columns: 170px 120px 130px minmax(220px, 1fr);
+    column-gap: 14px;
+    padding: 12px;
+  }
+
+  .logs-row > div:not(:last-child) {
+    padding-right: 10px;
+  }
+}
 
 .block-modal-tabs { display: flex; gap: 6px; margin-bottom: 18px; }
 .block-modal-tab { flex: 1; padding: 8px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #f8fafc; color: #475569; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s; }
