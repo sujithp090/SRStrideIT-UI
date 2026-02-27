@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { PendingRequestsModal } from "../RequestModal/RequestModal";
 import UsersPanel from "../Users/UsersPanel";
 import LogsPage from "../LogsPage/LogsPage";
@@ -34,7 +34,6 @@ const MONTH_NAMES = [
   "November",
   "December",
 ];
-const CELL_WIDTH = 90;
 
 function getWeekDays(anchor) {
   const start = new Date(anchor);
@@ -52,12 +51,6 @@ function isSameDay(a, b) {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate()
   );
-}
-
-function dateToPixel(date, cw) {
-  const minutesFromMidnight = date.getHours() * 60 + date.getMinutes();
-  const slotsFromStart = (minutesFromMidnight - GRID_START) / 30;
-  return slotsFromStart * cw;
 }
 
 function toDayStr(date) {
@@ -84,19 +77,9 @@ export default function CalendarView({
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [showUsersPanel, setShowUsersPanel] = useState(false);
   const [activeNav, setActiveNav] = useState("calendar");
-  const [cellWidth, setCellWidth] = useState(CELL_WIDTH);
   const [showLogs, setShowLogs] = useState(false);
   const [showRestricted, setShowRestricted] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
-  const cellRef = useRef(null);
-
-  // Measure actual rendered cell width after mount
-  useEffect(() => {
-    if (cellRef.current) {
-      const w = cellRef.current.getBoundingClientRect().width;
-      if (w > 0) setCellWidth(w);
-    }
-  }, []);
 
   const weekDays = getWeekDays(anchor);
 
@@ -144,8 +127,6 @@ export default function CalendarView({
 
   // Remove past days — only show today and future
   daysToDisplay = daysToDisplay.filter((d) => d.getTime() >= today.getTime());
-
-  const totalGridWidth = SLOT_COUNT * cellWidth;
 
   const visibleCalendars =
     user?.role === "admin"
@@ -207,25 +188,12 @@ export default function CalendarView({
         {/* ── Sidebar ── */}
         <div className="cal-sidebar">
           {visibleCalendars.length >= 1 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div className="cal-calendar-switches">
               {visibleCalendars.map((c) => (
                 <button
                   key={c}
                   onClick={() => setActiveCalendar(c)}
-                  style={{
-                    width: 60,
-                    height: 34,
-                    borderRadius: 8,
-                    border:
-                      activeCalendar === c
-                        ? "2px solid #0ea5e9"
-                        : "1px solid #e2e8f0",
-                    background: activeCalendar === c ? "#e0f2fe" : "#f8fafc",
-                    color: activeCalendar === c ? "#0369a1" : "#475569",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
+                  className={`cal-calendar-switch ${activeCalendar === c ? "active" : ""}`}
                 >
                   {c.toUpperCase()}
                 </button>
@@ -250,13 +218,12 @@ export default function CalendarView({
 
           {/* ── Restricted Companies ── */}
           <button
-            className={`cal-sidebar-btn ${activeNav === "restricted" ? "active" : ""}`}
             title="Restricted Companies"
             onClick={() => {
               setActiveNav("restricted");
               setShowRestricted(true);
             }}
-            style={activeNav === "restricted" ? {} : { color: "#dc2626" }}
+            className={`cal-sidebar-btn ${activeNav === "restricted" ? "active" : ""} ${activeNav === "restricted" ? "" : "cal-sidebar-btn-danger"}`}
           >
             <svg
               viewBox="0 0 24 24"
@@ -291,13 +258,12 @@ export default function CalendarView({
           {/* ── Block Slot (admin only) ── */}
           {user?.role === "admin" && (
             <button
-              className={`cal-sidebar-btn ${activeNav === "block" ? "active" : ""}`}
+              className={`cal-sidebar-btn ${activeNav === "block" ? "active" : ""} ${activeNav === "block" ? "" : "cal-sidebar-btn-danger"}`}
               title="Block Time Slots"
               onClick={() => {
                 setActiveNav("block");
                 setShowBlockModal(true);
               }}
-              style={activeNav === "block" ? {} : { color: "#dc2626" }}
             >
               <svg
                 viewBox="0 0 24 24"
@@ -321,13 +287,9 @@ export default function CalendarView({
         <div className="cal-main">
           <div className="cal-header">
             <button
-              className="cal-nav-btn"
               onClick={handlePrev}
               disabled={isPrevDisabled}
-              style={{
-                opacity: isPrevDisabled ? 0.3 : 1,
-                cursor: isPrevDisabled ? "not-allowed" : "pointer",
-              }}
+              className={`cal-nav-btn ${isPrevDisabled ? "cal-nav-btn-disabled" : ""}`}
             >
               <svg
                 width="14"
@@ -389,23 +351,10 @@ export default function CalendarView({
           <div className="cal-grid-scroll">
             {/* ── Time header ── */}
             <div className="cal-times-header">
-              <div
-                className="cal-times-header-corner"
-                style={{ width: 120, minWidth: 120 }}
-              />
-              <div style={{ display: "flex", flexShrink: 0 }}>
+              <div className="cal-times-header-corner" />
+              <div className="cal-times-header-row">
                 {HOURS.map((hour, i) => (
-                  <div
-                    key={i}
-                    ref={i === 0 ? cellRef : null}
-                    className="cal-time-header-cell"
-                    style={{
-                      width: CELL_WIDTH,
-                      minWidth: CELL_WIDTH,
-                      maxWidth: CELL_WIDTH,
-                      flexShrink: 0,
-                    }}
-                  >
+                  <div key={i} className="cal-time-header-cell">
                     {hour}
                   </div>
                 ))}
@@ -437,12 +386,10 @@ export default function CalendarView({
                   <div
                     key={dayIdx}
                     className={`cal-day-row ${!isCurrentMonth ? "other-month" : ""}`}
-                    style={{ display: "flex", minHeight: 56 }}
                   >
                     {/* Sticky day label */}
                     <div
                       className={`cal-day-row-header ${isToday ? "today" : ""}`}
-                      style={{ width: 120, minWidth: 120, flexShrink: 0 }}
                     >
                       <div className="cal-day-row-name">
                         {DAY_NAMES[day.getDay()]}
@@ -451,30 +398,11 @@ export default function CalendarView({
                     </div>
 
                     {/* Time grid area */}
-                    <div
-                      style={{
-                        position: "relative",
-                        width: totalGridWidth,
-                        flexShrink: 0,
-                      }}
-                    >
+                    <div className="cal-day-grid-area">
                       {/* Background cell lines */}
-                      <div style={{ display: "flex", height: "100%" }}>
+                      <div className="cal-grid-bg-row">
                         {HOURS.map((_, i) => (
-                          <div
-                            key={i}
-                            style={{
-                              width: CELL_WIDTH,
-                              minWidth: CELL_WIDTH,
-                              maxWidth: CELL_WIDTH,
-                              flexShrink: 0,
-                              borderRight: "1px solid #f1f5f9",
-                              height: "100%",
-                              background: isToday
-                                ? "rgba(219,234,254,0.15)"
-                                : "transparent",
-                            }}
-                          />
+                          <div key={i} className={`cal-grid-bg-cell ${isToday ? "today" : ""}`} />
                         ))}
                       </div>
 
@@ -484,28 +412,9 @@ export default function CalendarView({
                           return (
                             <div
                               key={b.id}
-                              style={{
-                                position: "absolute",
-                                top: 0,
-                                bottom: 0,
-                                left: 0,
-                                width: totalGridWidth,
-                                background: "rgba(220,38,38,0.10)",
-                                borderLeft: "4px solid #dc2626",
-                                zIndex: 3,
-                                display: "flex",
-                                alignItems: "center",
-                                paddingLeft: 10,
-                                pointerEvents: "none",
-                              }}
+                              className="cal-block-bar cal-block-bar-full"
                             >
-                              <span
-                                style={{
-                                  fontSize: 11,
-                                  fontWeight: 700,
-                                  color: "#dc2626",
-                                }}
-                              >
+                              <span className="cal-block-label cal-block-label-full">
                                 🚫 {b.label}
                               </span>
                             </div>
@@ -515,39 +424,22 @@ export default function CalendarView({
                         const [eh, em] = b.endTime.split(":").map(Number);
                         const startMins = sh * 60 + sm;
                         const endMins = eh * 60 + em;
-                        const leftPx =
-                          ((startMins - GRID_START) / 30) * cellWidth;
-                        const widthPx =
-                          ((endMins - startMins) / 30) * cellWidth;
-                        if (leftPx < 0 || leftPx >= totalGridWidth) return null;
+                        const startSlot = Math.max(
+                          0,
+                          Math.floor((startMins - GRID_START) / 30),
+                        );
+                        const endSlot = Math.min(
+                          SLOT_COUNT,
+                          Math.ceil((endMins - GRID_START) / 30),
+                        );
+                        const span = Math.max(1, endSlot - startSlot);
+                        if (startSlot >= SLOT_COUNT) return null;
                         return (
                           <div
                             key={b.id}
-                            style={{
-                              position: "absolute",
-                              top: 0,
-                              bottom: 0,
-                              left: leftPx,
-                              width: Math.max(widthPx, 20),
-                              background: "rgba(220,38,38,0.12)",
-                              borderLeft: "3px solid #dc2626",
-                              borderRight: "1px solid #fca5a5",
-                              zIndex: 3,
-                              display: "flex",
-                              alignItems: "center",
-                              paddingLeft: 6,
-                              pointerEvents: "none",
-                              overflow: "hidden",
-                            }}
+                            className={`cal-block-bar cal-col-${startSlot} cal-span-${span}`}
                           >
-                            <span
-                              style={{
-                                fontSize: 10.5,
-                                fontWeight: 700,
-                                color: "#dc2626",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
+                            <span className="cal-block-label">
                               🚫 {b.label}
                             </span>
                           </div>
@@ -556,10 +448,16 @@ export default function CalendarView({
 
                       {/* Events — absolutely positioned using pixel offset */}
                       {dayEvents.map((ev) => {
-                        const leftPx = dateToPixel(ev.start, cellWidth);
-                        const widthPx = dateToPixel(ev.end, cellWidth) - leftPx;
-
-                        if (leftPx < 0 || leftPx >= totalGridWidth) return null;
+                        const startSlot = Math.max(
+                          0,
+                          Math.floor((ev.start.getHours() * 60 + ev.start.getMinutes() - GRID_START) / 30),
+                        );
+                        const endSlot = Math.min(
+                          SLOT_COUNT,
+                          Math.ceil((ev.end.getHours() * 60 + ev.end.getMinutes() - GRID_START) / 30),
+                        );
+                        const span = Math.max(1, endSlot - startSlot);
+                        if (startSlot >= SLOT_COUNT) return null;
 
                         let roundClass = "pending";
                         if (ev.round === "L1") roundClass = "round-l1";
@@ -571,38 +469,14 @@ export default function CalendarView({
                         return (
                           <div
                             key={ev.id}
-                            className={`cal-event ${roundClass}`}
-                            style={{
-                              position: "absolute",
-                              top: 2,
-                              bottom: 2,
-                              left: leftPx,
-                              width: Math.max(widthPx - 2, 40),
-                              overflow: "visible",
-                              zIndex: 4,
-                            }}
+                            className={`cal-event ${roundClass} cal-event-pos cal-col-${startSlot} cal-span-${span}`}
                             onClick={(e) => {
                               e.stopPropagation();
                               onEventClick && onEventClick(ev);
                             }}
                           >
                             {ev.status === "approved" ? (
-                              <div
-                                style={{
-                                  position: "absolute",
-                                  top: 4,
-                                  right: 4,
-                                  width: 18,
-                                  height: 18,
-                                  backgroundColor: "#16a34a",
-                                  borderRadius: "50%",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  boxShadow: "0 1px 4px rgba(22,163,74,0.5)",
-                                }}
-                                title="Approved"
-                              >
+                              <div className="cal-event-status cal-event-status-approved" title="Approved">
                                 <svg
                                   width="10"
                                   height="10"
@@ -617,21 +491,7 @@ export default function CalendarView({
                                 </svg>
                               </div>
                             ) : !ev.image ? (
-                              <div
-                                style={{
-                                  position: "absolute",
-                                  top: 4,
-                                  right: 4,
-                                  width: 16,
-                                  height: 16,
-                                  backgroundColor: "#fca5a5",
-                                  borderRadius: "50%",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                }}
-                                title="No image uploaded"
-                              >
+                              <div className="cal-event-status cal-event-status-missing" title="No image uploaded">
                                 <svg
                                   width="10"
                                   height="10"
@@ -665,17 +525,7 @@ export default function CalendarView({
                               })}
                             </div>
                             {ev.status === "pending" && (
-                              <div
-                                style={{
-                                  position: "absolute",
-                                  bottom: 0,
-                                  left: 0,
-                                  right: 0,
-                                  height: 4,
-                                  backgroundColor: "#9ca3af",
-                                  borderRadius: "0 0 4px 4px",
-                                }}
-                              />
+                              <div className="cal-event-pending-bar" />
                             )}
                           </div>
                         );

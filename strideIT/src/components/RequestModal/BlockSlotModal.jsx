@@ -39,54 +39,13 @@ export function BlockSlotModal({ onClose, onSave, blockedSlots = [] }) {
 
   return (
     <ModalChrome onClose={onClose}>
-      <style>{`
-        .block-modal-tabs {
-          display: flex; gap: 6px; margin-bottom: 18px;
-        }
-        .block-modal-tab {
-          flex: 1; padding: 8px; border-radius: 8px;
-          border: 1.5px solid #e2e8f0; background: #f8fafc;
-          color: #475569; font-size: 13px; font-weight: 600;
-          cursor: pointer; font-family: inherit; transition: all 0.15s;
-        }
-        .block-modal-tab.active {
-          background: #fef2f2; color: #dc2626; border-color: #fca5a5;
-        }
-        .block-error {
-          background: #fef2f2; border: 1.5px solid #fca5a5;
-          border-radius: 10px; padding: 10px 14px;
-          font-size: 12.5px; color: #dc2626; margin-bottom: 14px;
-        }
-        .block-existing {
-          margin-top: 16px; border-top: 1px solid #f1f5f9; padding-top: 14px;
-        }
-        .block-existing-title {
-          font-size: 11.5px; font-weight: 700; color: #94a3b8;
-          text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
-        }
-        .block-item {
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 8px 10px; border-radius: 8px; background: #fff5f5;
-          border: 1px solid #fecaca; margin-bottom: 6px;
-        }
-        .block-item-info { font-size: 12.5px; color: #991b1b; }
-        .block-item-label { font-weight: 600; margin-bottom: 2px; }
-        .block-item-time { font-size: 11.5px; color: #b91c1c; }
-        .block-item-del {
-          background: none; border: none; cursor: pointer;
-          color: #ef4444; padding: 4px; border-radius: 4px;
-          display: flex; align-items: center;
-        }
-        .block-item-del:hover { background: #fee2e2; }
-      `}</style>
 
       <div className="modal-body">
         {/* Header */}
         <div className="modal-header-wrapper">
           <div className="modal-section-header">
             <div
-              className="modal-section-icon"
-              style={{ background: "#fef2f2" }}
+              className="modal-section-icon block-modal-section-icon"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -102,7 +61,7 @@ export function BlockSlotModal({ onClose, onSave, blockedSlots = [] }) {
                 <line x1="9" y1="16" x2="15" y2="16" />
               </svg>
             </div>
-            <span className="modal-section-title" style={{ color: "#dc2626" }}>
+            <span className="modal-section-title block-modal-section-title">
               Block Time Slot
             </span>
           </div>
@@ -137,10 +96,9 @@ export function BlockSlotModal({ onClose, onSave, blockedSlots = [] }) {
           <div className="modal-field">
             <label className="modal-label">Calendar</label>
             <select
-              className="modal-input"
+              className="modal-input block-modal-select"
               value={calendar}
               onChange={(e) => setCalendar(e.target.value)}
-              style={{ appearance: "none" }}
             >
               <option value="boys">Boys</option>
               <option value="girls">Girls</option>
@@ -252,8 +210,7 @@ export function BlockSlotModal({ onClose, onSave, blockedSlots = [] }) {
           Cancel
         </button>
         <button
-          className="btn-submit"
-          style={{ background: "#dc2626" }}
+          className="btn-submit block-modal-submit"
           onClick={handleSave}
           disabled={!date || (mode === "range" && (!startTime || !endTime))}
         >

@@ -29,23 +29,18 @@ export function EventDetailModal({
 
         {/* Candidate Image */}
         {event.image && (
-          <div style={{ marginBottom: "20px", textAlign: "center" }}>
+          <div className="modal-event-image-wrap modal-event-image-wrap-center">
             <img
               src={event.image}
               alt={event.candidate}
-              style={{
-                maxWidth: "150px",
-                maxHeight: "150px",
-                borderRadius: "8px",
-                objectFit: "cover",
-              }}
+              className="modal-event-image-thumb"
             />
           </div>
         )}
 
         {/* Time Display */}
         <div className="modal-detail-row">
-          <div className="modal-detail-icon" style={{ background: "#e0f2fe" }}>
+          <div className="modal-detail-icon modal-detail-icon-time">
             <svg
               viewBox="0 0 24 24"
               width="16"
@@ -84,7 +79,7 @@ export function EventDetailModal({
             🗑️ Delete
           </button>
         )}
-        <div style={{ flex: 1 }} />
+        <div className="modal-flex-spacer" />
         <button className="btn-cancel" onClick={onClose}>
           Cancel
         </button>

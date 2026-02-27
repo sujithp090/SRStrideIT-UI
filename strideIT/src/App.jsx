@@ -419,23 +419,7 @@ export default function App() {
   /* Loading                                                     */
   /* ─────────────────────────────────────────────────────────── */
 
-  const Spinner = ({ label }) => (
-    <div
-      style={{
-        height: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: "Poppins, sans-serif",
-        fontSize: 14,
-        color: "#64748b",
-        background: "#f8fafc",
-        gap: 10,
-      }}
-    >
-      {label}
-    </div>
-  );
+  const Spinner = ({ label }) => <div className="app-spinner">{label}</div>;
 
   if (authLoading) return <Spinner label="Loading..." />;
   if (!user) return <LoginScreen onLogin={(profile) => setUser(profile)} />;

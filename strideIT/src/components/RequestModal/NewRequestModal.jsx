@@ -150,86 +150,6 @@ export function NewRequestModal({
 
   return (
     <ModalChrome onClose={onClose}>
-      <style>{`
-        .modal-input-wrap { position: relative; display: block; }
-        .modal-input-wrap .modal-input { width: 100%; padding-right: 36px; }
-        .modal-input-wrap .modal-input[type="date"]::-webkit-calendar-picker-indicator,
-        .modal-input-wrap .modal-input[type="time"]::-webkit-calendar-picker-indicator {
-          opacity: 0; position: absolute; right: 0; width: 36px; height: 100%; cursor: pointer;
-        }
-        .modal-input-icon {
-          position: absolute; right: 10px; top: 50%;
-          transform: translateY(-50%); display: flex; align-items: center; pointer-events: none;
-        }
-        .modal-select {
-          appearance: none; -webkit-appearance: none; -moz-appearance: none;
-          padding-right: 36px; border-left: 4px solid var(--round-color, #3b82f6);
-          cursor: pointer; width: 100%;
-        }
-        .modal-chevron {
-          position: absolute; right: 10px; top: 50%;
-          transform: translateY(-50%) rotate(0deg);
-          transform-origin: 50% 50%;
-          transition: transform 0.2s ease;
-          display: flex; align-items: center; pointer-events: none;
-        }
-        .modal-input-wrap.open .modal-chevron {
-          transform: translateY(-50%) rotate(180deg);
-        }
-        .modal-conflict-error {
-          background: #fef2f2;
-          border: 1.5px solid #fca5a5;
-          border-radius: 10px;
-          padding: 12px 14px;
-          margin: 0 0 14px 0;
-          display: flex;
-          align-items: flex-start;
-          gap: 10px;
-          font-size: 13px;
-          color: #dc2626;
-          font-family: Poppins, sans-serif;
-          line-height: 1.5;
-        }
-        .modal-conflict-error svg { flex-shrink: 0; margin-top: 1px; }
-
-        @keyframes warnSlideIn {
-          from { opacity: 0; transform: translateY(-5px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .modal-restricted-warn {
-          margin-top: 8px;
-          margin-bottom: 4px;
-          background: #fef2f2;
-          border: 1.5px solid #fca5a5;
-          border-radius: 10px;
-          padding: 10px 12px;
-          display: flex;
-          align-items: flex-start;
-          gap: 9px;
-          animation: warnSlideIn 0.18s ease;
-        }
-        .modal-restricted-warn-title {
-          font-size: 12.5px;
-          font-weight: 700;
-          color: #dc2626;
-          margin-bottom: 3px;
-        }
-        .modal-restricted-warn-reason {
-          font-size: 12px;
-          color: #b91c1c;
-          line-height: 1.5;
-        }
-        .modal-restricted-warn-exempt {
-          font-size: 11.5px;
-          color: #6b7280;
-          margin-top: 5px;
-          font-style: italic;
-        }
-        .modal-input--restricted {
-          border-color: #fca5a5 !important;
-          background: #fff8f8 !important;
-        }
-      `}</style>
 
       <div className="modal-body">
         <div className="modal-header-wrapper">
@@ -326,8 +246,7 @@ export function NewRequestModal({
               </div>
             </div>
             <button
-              className="btn-cancel"
-              style={{ padding: "4px 10px", fontSize: 12 }}
+              className="btn-cancel new-request-small-chip"
               onClick={() => setFile(null)}
             >
               Remove
@@ -442,7 +361,7 @@ export function NewRequestModal({
               stroke="#dc2626"
               strokeWidth="2.5"
               strokeLinecap="round"
-              style={{ flexShrink: 0, marginTop: 2 }}
+              className="new-request-warn-icon"
             >
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
@@ -469,8 +388,7 @@ export function NewRequestModal({
           <div className="modal-field">
             <label className="modal-label">Round *</label>
             <div
-              className={`modal-input-wrap${roundOpen ? " open" : ""}`}
-              style={{ "--round-color": roundColor }}
+              className={`modal-input-wrap new-request-round-wrap new-request-round-${round.toLowerCase().replace(/\s+/g, "-")} ${roundOpen ? "open" : ""}`}
             >
               <select
                 className="modal-input modal-select"
