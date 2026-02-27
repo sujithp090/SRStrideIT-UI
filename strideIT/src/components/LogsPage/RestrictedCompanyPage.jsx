@@ -152,7 +152,7 @@ const TAG_CLASS = {
   "Additional Checks": "restricted-tag-additional",
 };
 
-const ALL_TAGS = Object.keys(TAG_STYLES);
+const ALL_TAGS = Object.keys(TAG_CLASS);
 
 export default function RestrictedCompaniesPage({ onClose }) {
   const [search, setSearch] = useState("");
