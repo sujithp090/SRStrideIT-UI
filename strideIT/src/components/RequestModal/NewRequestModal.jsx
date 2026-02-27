@@ -11,6 +11,14 @@ const toTimeInput = (d) => {
 const toDateInput = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
+const MIN_REQUEST_TIME = "08:00";
+const MAX_REQUEST_TIME = "20:30";
+
+const toMinutes = (time) => {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+};
+
 const ChevronIcon = () => (
   <svg
     width="16"
@@ -90,6 +98,29 @@ export function NewRequestModal({
   const handleSubmit = async () => {
     if (!candidate || !date || !company || !startTime || !endTime) return;
     setConflictError("");
+
+    const minMinutes = toMinutes(MIN_REQUEST_TIME);
+    const maxMinutes = toMinutes(MAX_REQUEST_TIME);
+    const startMinutes = toMinutes(startTime);
+    const endMinutes = toMinutes(endTime);
+
+    if (
+      startMinutes < minMinutes ||
+      startMinutes > maxMinutes ||
+      endMinutes < minMinutes ||
+      endMinutes > maxMinutes
+    ) {
+      setConflictError(
+        `Interview requests are only allowed between ${MIN_REQUEST_TIME} and ${MAX_REQUEST_TIME}.`,
+      );
+      return;
+    }
+
+    if (startMinutes >= endMinutes) {
+      setConflictError("End time must be after start time.");
+      return;
+    }
+
     setSubmitting(true);
 
     const result = await onSubmit({
@@ -283,6 +314,8 @@ export function NewRequestModal({
                 className="modal-input"
                 value={startTime}
                 step="1800"
+                min={MIN_REQUEST_TIME}
+                max={MAX_REQUEST_TIME}
                 onChange={(e) => {
                   setStart(e.target.value);
                   setConflictError("");
@@ -308,6 +341,8 @@ export function NewRequestModal({
                 className="modal-input"
                 value={endTime}
                 step="1800"
+                min={MIN_REQUEST_TIME}
+                max={MAX_REQUEST_TIME}
                 onChange={(e) => {
                   setEnd(e.target.value);
                   setConflictError("");
