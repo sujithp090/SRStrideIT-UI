@@ -197,6 +197,8 @@ export function NewRequestModal({
           to   { opacity: 1; transform: translateY(0); }
         }
         .modal-restricted-warn {
+          margin-top: 8px;
+          margin-bottom: 4px;
           background: #fef2f2;
           border: 1.5px solid #fca5a5;
           border-radius: 10px;
@@ -205,7 +207,6 @@ export function NewRequestModal({
           align-items: flex-start;
           gap: 9px;
           animation: warnSlideIn 0.18s ease;
-          margin-bottom: 12px;
         }
         .modal-restricted-warn-title {
           font-size: 12.5px;
@@ -343,6 +344,7 @@ export function NewRequestModal({
                 type="date"
                 className="modal-input"
                 value={date}
+                min={toDateInput(new Date())}
                 onChange={(e) => {
                   setDate(e.target.value);
                   setConflictError("");
@@ -414,7 +416,7 @@ export function NewRequestModal({
             />
           </div>
 
-          {/* ── Company field with live restricted-company check ── */}
+          {/* ── Company field ── */}
           <div className="modal-field">
             <label className="modal-label">Company *</label>
             <input
@@ -428,6 +430,8 @@ export function NewRequestModal({
             />
           </div>
         </div>
+
+        {/* ── Restricted warning — spans full width below both fields ── */}
         {restrictedInfo && (
           <div className="modal-restricted-warn">
             <svg
@@ -446,7 +450,7 @@ export function NewRequestModal({
             </svg>
             <div>
               <div className="modal-restricted-warn-title">
-                Restricted Company
+                ⚠️ Restricted Company
               </div>
               <div className="modal-restricted-warn-reason">
                 <strong>{restrictedInfo.name}</strong> — {restrictedInfo.reason}

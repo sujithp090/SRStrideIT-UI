@@ -140,6 +140,7 @@ body {
   height: 64px;
   flex-shrink: 0;
   gap: 12px;
+  padding-left: 5px !important;
 }
 
 .cal-navbar-brand {
@@ -148,28 +149,9 @@ body {
   gap: 10px;
 }
 
-.cal-navbar-icon {
-  width: 30px;
-  height: 30px;
-  background: linear-gradient(135deg, #2563eb, #60a5fa);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cal-navbar-icon svg {
-  width: 16px;
-  height: 16px;
-  stroke: white;
-}
-
 .cal-navbar-title {
-  font-family: "Fraunces", serif;
-  font-size: 15px;
-  font-weight: 600;
-  color: white;
-  letter-spacing: -0.2px;
+  width: 120px;
+  margin-top: 5px;
 }
 
 .cal-navbar-spacer {
@@ -702,7 +684,7 @@ select.modal-input::-ms-expand {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, #0f2744 0%, #1e3a6e 40%, #1d4ed8 100%);
+  /* background: linear-gradient(145deg, #0f2744 0%, #1e3a6e 40%, #1d4ed8 100%); */
   font-family: "Poppins", system-ui, Avenir, Helvetica, Arial, sans-serif;
   position: relative;
   overflow: hidden;
@@ -770,21 +752,10 @@ select.modal-input::-ms-expand {
 }
 
 .login-logo-icon {
-  width: 64px;
-  height: 64px;
-  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
-  border-radius: 18px;
+  width: 250px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 14px;
-  box-shadow: 0 8px 28px rgba(29, 78, 216, 0.4);
-}
-
-.login-logo-icon svg {
-  width: 30px;
-  height: 30px;
-  stroke: white;
 }
 
 .login-app-name {
@@ -1531,9 +1502,7 @@ select.modal-input::-ms-expand {
   }
 
   .login-logo-icon {
-    width: 52px;
-    height: 52px;
-    margin-bottom: 12px;
+    width: 180px;
   }
 
   .login-app-name {
@@ -1717,9 +1686,7 @@ select.modal-input::-ms-expand {
   }
 
   .login-logo-icon {
-    width: 60px;
-    height: 60px;
-    margin-bottom: 12px;
+    width: 200px;
   }
 
   .login-app-name {

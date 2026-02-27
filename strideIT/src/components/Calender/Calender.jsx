@@ -3,6 +3,7 @@ import { PendingRequestsModal } from "../RequestModal/RequestModal";
 import UsersPanel from "../Users/UsersPanel";
 import LogsPage from "../LogsPage/LogsPage";
 import RestrictedCompaniesPage from "../LogsPage/RestrictedCompanyPage";
+import strideMainLogo from "../../assets/strideMainLogo.svg";
 
 const SLOT_COUNT = 26;
 const GRID_START = 8 * 60; // 8:00 AM in minutes
@@ -112,14 +113,15 @@ export default function CalendarView({
   } else {
     const firstDay = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
     const lastDay = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
-    const start = new Date(firstDay);
-    start.setDate(firstDay.getDate() - firstDay.getDay());
-    let current = new Date(start);
-    while (current <= lastDay || current.getDay() !== 0) {
+    let current = new Date(firstDay);
+    while (current <= lastDay) {
       daysToDisplay.push(new Date(current));
       current.setDate(current.getDate() + 1);
     }
   }
+
+  // Remove past days — only show today and future
+  daysToDisplay = daysToDisplay.filter((d) => d.getTime() >= today.getTime());
 
   const totalGridWidth = SLOT_COUNT * cellWidth;
 
@@ -139,19 +141,9 @@ export default function CalendarView({
       {/* ── Navbar ── */}
       <div className="cal-navbar">
         <div className="cal-navbar-brand">
-          <div className="cal-navbar-icon">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          </div>
-          <span className="cal-navbar-title">SR Stride IT</span>
+          <span className="cal-navbar-title">
+            <img src={strideMainLogo} />
+          </span>
         </div>
         <div className="cal-navbar-spacer" />
         <button
@@ -189,7 +181,7 @@ export default function CalendarView({
       <div className="cal-shell">
         {/* ── Sidebar ── */}
         <div className="cal-sidebar">
-          {visibleCalendars.length > 1 && (
+          {visibleCalendars.length >= 1 && (
             <div
               style={{
                 display: "flex",
@@ -255,15 +247,8 @@ export default function CalendarView({
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              {/* Building */}
-              <path d="M3 21h13" />
-              <path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v6" />
-              <path d="M9 21v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4" />
-              <line x1="9" y1="8" x2="9" y2="8.01" />
-              <line x1="9" y1="12" x2="9" y2="12.01" />
-              {/* X mark top-right */}
-              <line x1="17" y1="13" x2="21" y2="17" />
-              <line x1="21" y1="13" x2="17" y2="17" />
+              <circle cx="12" cy="12" r="10" />
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
             </svg>
           </button>
 

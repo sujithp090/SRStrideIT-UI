@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
+import strideLogoLogin from "../../assets/strideLogoLogin.svg";
 
 export default function LoginScreen({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -78,21 +79,11 @@ export default function LoginScreen({ onLogin }) {
       <div className="login-card">
         <div className="login-logo-wrap">
           <div className="login-logo-icon">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
+            <img src={strideLogoLogin} />
           </div>
-          <span className="login-app-name">SR Stride IT</span>
         </div>
 
-        <div className="login-title">Welcome back</div>
+        <div className="login-title">Welcome</div>
 
         {error && <div className="login-error-msg">⚠ {error}</div>}
 

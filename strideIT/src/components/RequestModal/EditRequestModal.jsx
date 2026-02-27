@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { ModalChrome } from "./ModalChrome";
 
+const todayStr = new Date().toISOString().split("T")[0];
+
 // ── Edit Request Modal (click on scheduled event) ──────────────────────────────
 export function EditRequestModal({ event, user, onClose, onDelete, onUpdate }) {
   if (!event) return null;
@@ -88,7 +90,7 @@ export function EditRequestModal({ event, user, onClose, onDelete, onUpdate }) {
           </div>
         )}
 
-        {/* Read-only fields */}
+        {/* Candidate name */}
         <div className="modal-field">
           <label className="modal-label">Candidate Name</label>
           <input
@@ -140,7 +142,7 @@ export function EditRequestModal({ event, user, onClose, onDelete, onUpdate }) {
           </div>
         )}
 
-        {/* Editable date and time fields */}
+        {/* Date + time fields — past dates disabled */}
         <div className="modal-input-row">
           <div className="modal-field">
             <label className="modal-label">Start Date</label>
@@ -148,6 +150,7 @@ export function EditRequestModal({ event, user, onClose, onDelete, onUpdate }) {
               type="date"
               className="modal-input"
               value={startDate}
+              min={todayStr}
               onChange={(e) => setStartDate(e.target.value)}
             />
           </div>
@@ -170,6 +173,7 @@ export function EditRequestModal({ event, user, onClose, onDelete, onUpdate }) {
               type="date"
               className="modal-input"
               value={endDate}
+              min={todayStr}
               onChange={(e) => setEndDate(e.target.value)}
             />
           </div>
@@ -185,7 +189,7 @@ export function EditRequestModal({ event, user, onClose, onDelete, onUpdate }) {
           </div>
         </div>
 
-        {/* Footer buttons */}
+        {/* Footer */}
         <div className="modal-footer">
           {user?.role === "admin" && (
             <button
