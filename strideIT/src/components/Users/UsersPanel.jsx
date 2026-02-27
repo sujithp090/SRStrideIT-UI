@@ -2,21 +2,17 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 
 export default function UsersPanel({ onClose }) {
+  const [tab, setTab] = useState("active"); // "active" | (no pending tab — pending is in navbar)
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
-
   const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
     const getCurrentUser = async () => {
       const { data } = await supabase.auth.getUser();
-      if (data?.user) {
-        setCurrentUserId(data.user.id);
-      }
+      if (data?.user) setCurrentUserId(data.user.id);
     };
-
     getCurrentUser();
     fetchUsers();
   }, []);
@@ -27,28 +23,19 @@ export default function UsersPanel({ onClose }) {
       .from("profiles")
       .select("id, name, email, role, username, calendars, created_at")
       .order("created_at", { ascending: false });
-
     if (!error) setUsers(data);
     setLoading(false);
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-
-    const { error } = await supabase
-      .from("profiles")
-      .delete()
-      .eq("id", deleteTarget.id);
-
-    if (!error) {
-      setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
-    }
+    await supabase.from("profiles").delete().eq("id", deleteTarget.id);
+    setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
     setDeleteTarget(null);
   };
 
   return (
     <>
-      {/* ── Panel overlay ── */}
       <div
         style={{
           position: "fixed",
@@ -56,14 +43,10 @@ export default function UsersPanel({ onClose }) {
           zIndex: 200,
           background: "rgba(15,39,68,0.45)",
           backdropFilter: "blur(2px)",
-          display: "flex",
-          alignItems: "stretch",
-          justifyContent: "flex-end",
         }}
         onClick={onClose}
       />
 
-      {/* ── Slide-in panel ── */}
       <div
         style={{
           position: "fixed",
@@ -71,7 +54,7 @@ export default function UsersPanel({ onClose }) {
           right: 0,
           bottom: 0,
           zIndex: 201,
-          width: "480px",
+          width: 480,
           maxWidth: "100vw",
           background: "#fff",
           boxShadow: "-8px 0 40px rgba(15,39,68,0.18)",
@@ -82,10 +65,7 @@ export default function UsersPanel({ onClose }) {
         }}
       >
         <style>{`
-          @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to   { transform: translateX(0);    opacity: 1; }
-          }
+          @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         `}</style>
 
         {/* Header */}
@@ -100,7 +80,7 @@ export default function UsersPanel({ onClose }) {
             flexShrink: 0,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div
               style={{
                 width: 32,
@@ -132,7 +112,7 @@ export default function UsersPanel({ onClose }) {
                 User Management
               </div>
               <div style={{ fontSize: 12, opacity: 0.7 }}>
-                {users.length} users
+                {users.length} active users
               </div>
             </div>
           </div>
@@ -166,50 +146,6 @@ export default function UsersPanel({ onClose }) {
           </button>
         </div>
 
-        {/* Add user button */}
-        <div
-          style={{
-            padding: "16px 24px",
-            borderBottom: "1px solid #f1f5f9",
-            flexShrink: 0,
-          }}
-        >
-          <button
-            onClick={() => setShowAddModal(true)}
-            style={{
-              width: "100%",
-              padding: "10px 16px",
-              background: "linear-gradient(135deg,#1d4ed8,#3b82f6)",
-              border: "none",
-              borderRadius: 10,
-              color: "white",
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              fontFamily: "Poppins, sans-serif",
-              boxShadow: "0 4px 14px rgba(29,78,216,0.3)",
-            }}
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            >
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Onboard New User
-          </button>
-        </div>
-
         {/* User list */}
         <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px" }}>
           {loading ? (
@@ -232,7 +168,7 @@ export default function UsersPanel({ onClose }) {
                 fontSize: 13,
               }}
             >
-              No users yet. Onboard your first user above.
+              No active users yet.
             </div>
           ) : (
             users.map((u) => (
@@ -247,10 +183,8 @@ export default function UsersPanel({ onClose }) {
                   marginBottom: 8,
                   background: "#f8fafc",
                   border: "1px solid #e2e8f0",
-                  transition: "border-color 0.15s",
                 }}
               >
-                {/* Avatar */}
                 <div
                   style={{
                     width: 38,
@@ -271,8 +205,6 @@ export default function UsersPanel({ onClose }) {
                 >
                   {u.name.charAt(0).toUpperCase()}
                 </div>
-
-                {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     style={{
@@ -297,7 +229,6 @@ export default function UsersPanel({ onClose }) {
                         fontWeight: 700,
                         padding: "1px 7px",
                         borderRadius: 20,
-                        letterSpacing: 0.3,
                         background: u.role === "admin" ? "#dbeafe" : "#f1f5f9",
                         color: u.role === "admin" ? "#1d4ed8" : "#64748b",
                       }}
@@ -305,7 +236,6 @@ export default function UsersPanel({ onClose }) {
                       {u.role.toUpperCase()}
                     </span>
                   </div>
-                  {/* Username badge */}
                   <div
                     style={{
                       fontSize: 12,
@@ -340,8 +270,6 @@ export default function UsersPanel({ onClose }) {
                       .join(" • ")}
                   </div>
                 </div>
-
-                {/* Delete */}
                 {u.id !== currentUserId && (
                   <button
                     onClick={() => setDeleteTarget(u)}
@@ -356,7 +284,6 @@ export default function UsersPanel({ onClose }) {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      transition: "background 0.15s",
                     }}
                     title="Delete user"
                   >
@@ -382,18 +309,6 @@ export default function UsersPanel({ onClose }) {
         </div>
       </div>
 
-      {/* ── Add User Modal ── */}
-      {showAddModal && (
-        <AddUserModal
-          onClose={() => setShowAddModal(false)}
-          onCreated={() => {
-            fetchUsers();
-            setShowAddModal(false);
-          }}
-        />
-      )}
-
-      {/* ── Delete Confirm Modal ── */}
       {deleteTarget && (
         <div
           style={{
@@ -472,376 +387,3 @@ export default function UsersPanel({ onClose }) {
     </>
   );
 }
-
-// ── Add User Modal ─────────────────────────────────────────────────────────────
-function AddUserModal({ onClose, onCreated }) {
-  const [name, setName] = useState("");
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState("user");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [calendars, setCalendars] = useState(["boys"]);
-
-  // Auto-suggest username from name as user types
-  const handleNameChange = (val) => {
-    setName(val);
-    if (!username) {
-      setUsername(val.trim().toLowerCase().replace(/\s+/g, "_"));
-    }
-  };
-
-  const handleCreate = async () => {
-    setError("");
-    if (!name.trim() || !username.trim() || !email.trim() || !password) {
-      setError("All fields are required.");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-    if (!/^[a-z0-9_]+$/.test(username.trim())) {
-      setError(
-        "Username can only contain lowercase letters, numbers, and underscores.",
-      );
-      return;
-    }
-
-    setLoading(true);
-
-    // 1. Check if username is already taken
-    const { data: existing } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("username", username.trim().toLowerCase())
-      .single();
-
-    if (existing) {
-      setError("That username is already taken. Please choose another.");
-      setLoading(false);
-      return;
-    }
-
-    // 2. Create auth user via signUp
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
-      password,
-      options: {
-        data: { name: name.trim(), role },
-      },
-    });
-
-    if (signUpError) {
-      setError(signUpError.message);
-      setLoading(false);
-      return;
-    }
-
-    // 3. Update the profile with username (and role if admin)
-    // The DB trigger creates the profile row; we update it with username + role
-    if (data.user) {
-      const updates = {
-        username: username.trim().toLowerCase(),
-        calendars,
-      };
-      if (role === "admin") updates.role = "admin";
-
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update(updates)
-        .eq("id", data.user.id);
-
-      if (updateError) {
-        setError(
-          "User created but failed to set username. Try updating manually.",
-        );
-        setLoading(false);
-        return;
-      }
-    }
-
-    setLoading(false);
-    onCreated();
-  };
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 300,
-        background: "rgba(0,0,0,0.5)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: "Poppins, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: 16,
-          padding: "28px 28px 24px",
-          width: 400,
-          boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 20,
-          }}
-        >
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>
-            Onboard New User
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "#94a3b8",
-            }}
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-        {error && (
-          <div
-            style={{
-              background: "#fee2e2",
-              border: "1px solid #fecaca",
-              borderRadius: 8,
-              padding: "10px 12px",
-              fontSize: 12,
-              color: "#dc2626",
-              marginBottom: 16,
-            }}
-          >
-            ⚠ {error}
-          </div>
-        )}
-        {/* Full Name */}
-        <div style={{ marginBottom: 14 }}>
-          <label style={labelStyle}>Full Name *</label>
-          <input
-            type="text"
-            placeholder="e.g. Jane Doe"
-            value={name}
-            onChange={(e) => handleNameChange(e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-        {/* Username */}
-        <div style={{ marginBottom: 14 }}>
-          <label style={labelStyle}>Username *</label>
-          <div style={{ position: "relative" }}>
-            <span
-              style={{
-                position: "absolute",
-                left: 12,
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "#94a3b8",
-                fontSize: 13,
-                fontWeight: 600,
-                pointerEvents: "none",
-              }}
-            >
-              @
-            </span>
-            <input
-              type="text"
-              placeholder="jane_doe"
-              value={username}
-              onChange={(e) =>
-                setUsername(
-                  e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""),
-                )
-              }
-              style={{ ...inputStyle, paddingLeft: 26 }}
-              autoCapitalize="none"
-              autoCorrect="off"
-            />
-          </div>
-          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
-            Lowercase letters, numbers, and underscores only. Used to log in.
-          </div>
-        </div>
-        {/* Email */}
-        <div style={{ marginBottom: 14 }}>
-          <label style={labelStyle}>Email *</label>
-          <input
-            type="email"
-            placeholder="jane@company.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-        {/* Password */}
-        <div style={{ marginBottom: 14 }}>
-          <label style={labelStyle}>Password *</label>
-          <input
-            type="password"
-            placeholder="Min 6 characters"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-        {/* Calendar Access */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={labelStyle}>Calendar Access *</label>
-
-          <div style={{ display: "flex", gap: 8 }}>
-            {["boys", "girls"].map((c) => {
-              const active = calendars.includes(c);
-
-              return (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => {
-                    if (active) {
-                      setCalendars(calendars.filter((x) => x !== c));
-                    } else {
-                      setCalendars([...calendars, c]);
-                    }
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: "9px",
-                    borderRadius: 8,
-                    cursor: "pointer",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    fontFamily: "Poppins, sans-serif",
-                    border: active
-                      ? "2px solid #6366f1"
-                      : "1.5px solid #e2e8f0",
-                    background: active ? "#eef2ff" : "#f8fafc",
-                    color: active ? "#4338ca" : "#64748b",
-                    transition: "all 0.15s",
-                  }}
-                >
-                  {c.toUpperCase()}
-                </button>
-              );
-            })}
-          </div>
-
-          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
-            Select which calendars this user can access.
-          </div>
-        </div>
-        {/* Role */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={labelStyle}>Role *</label>
-          <div style={{ display: "flex", gap: 8 }}>
-            {["user", "admin"].map((r) => (
-              <button
-                key={r}
-                onClick={() => setRole(r)}
-                style={{
-                  flex: 1,
-                  padding: "9px",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  fontFamily: "Poppins, sans-serif",
-                  border:
-                    role === r ? "2px solid #1d4ed8" : "1.5px solid #e2e8f0",
-                  background: role === r ? "#dbeafe" : "#f8fafc",
-                  color: role === r ? "#1d4ed8" : "#64748b",
-                  transition: "all 0.15s",
-                }}
-              >
-                {r.charAt(0).toUpperCase() + r.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button
-            onClick={onClose}
-            style={{
-              flex: 1,
-              padding: "10px",
-              borderRadius: 8,
-              border: "1px solid #e2e8f0",
-              background: "#f8fafc",
-              cursor: "pointer",
-              fontSize: 13,
-              fontWeight: 600,
-              color: "#475569",
-              fontFamily: "Poppins, sans-serif",
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleCreate}
-            disabled={loading}
-            style={{
-              flex: 2,
-              padding: "10px",
-              borderRadius: 8,
-              border: "none",
-              background: loading
-                ? "#93c5fd"
-                : "linear-gradient(135deg,#1d4ed8,#3b82f6)",
-              cursor: loading ? "not-allowed" : "pointer",
-              fontSize: 13,
-              fontWeight: 700,
-              color: "white",
-              fontFamily: "Poppins, sans-serif",
-            }}
-          >
-            {loading ? "Creating..." : "Create User"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const labelStyle = {
-  display: "block",
-  fontSize: 12,
-  fontWeight: 600,
-  color: "#334155",
-  marginBottom: 5,
-  textTransform: "uppercase",
-  letterSpacing: 0.3,
-};
-
-const inputStyle = {
-  width: "100%",
-  padding: "10px 12px",
-  borderRadius: 8,
-  border: "1.5px solid #e2e8f0",
-  fontSize: 13,
-  outline: "none",
-  fontFamily: "Poppins, sans-serif",
-  color: "#0f172a",
-  background: "#f8fafc",
-  boxSizing: "border-box",
-};

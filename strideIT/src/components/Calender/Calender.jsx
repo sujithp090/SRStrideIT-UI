@@ -5,6 +5,7 @@ import LogsPage from "../LogsPage/LogsPage";
 import RestrictedCompaniesPage from "../LogsPage/RestrictedCompanyPage";
 import { BlockSlotModal } from "../RequestModal/BlockSlotModal";
 import strideMainLogo from "../../assets/strideMainLogo.svg";
+import { SignupRequestsBell } from "../Login/SignUpPreRequestPanel";
 
 const SLOT_COUNT = 26;
 const GRID_START = 8 * 60; // 8:00 AM in minutes
@@ -182,6 +183,7 @@ export default function CalendarView({
             {pendingCount} pending requests
           </button>
         )}
+        {user?.role === "admin" && <SignupRequestsBell user={user} />}
         <button className="cal-navbar-pill" onClick={onLogout}>
           🔒 Log Out
         </button>
@@ -250,9 +252,8 @@ export default function CalendarView({
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <path d="M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4z" />
-
-              <rect x="9" y="10" width="6" height="6" rx="1" />
+              <circle cx="12" cy="12" r="10" />
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
             </svg>
           </button>
 
