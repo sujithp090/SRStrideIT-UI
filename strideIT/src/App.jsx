@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "./lib/supabase";
 import LoginScreen from "./components/Login/login";
 import CalendarView from "./components/Calender/Calender";
+import ToastStack from "./components/Notifications/ToastStack";
 import {
   NewRequestModal,
   EditRequestModal,
@@ -40,9 +41,18 @@ export default function App() {
   const [events, setEvents] = useState([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [activeCalendar, setActiveCalendar] = useState("boys");
+  const [notifications, setNotifications] = useState([]);
 
   // ── Blocked slots — lifted here so App can pass to NewRequestModal ──
   const [blockedSlots, setBlockedSlots] = useState([]);
+
+  const notify = (message, type = "info") => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setNotifications((prev) => [...prev, { id, message, type }]);
+    window.setTimeout(() => {
+      setNotifications((prev) => prev.filter((item) => item.id !== id));
+    }, 3500);
+  };
 
   /* ─────────────────────────────────────────────────────────── */
   /* Activity Logger                                             */
@@ -256,7 +266,10 @@ export default function App() {
       .select()
       .single();
 
-    if (error) return { error: "Failed to submit request." };
+    if (error) {
+      notify("Failed to create request.", "error");
+      return { error: "Failed to submit request." };
+    }
 
     const newEvent = rowToEvent(data);
     setEvents((prev) => [...prev, newEvent]);
@@ -275,6 +288,7 @@ export default function App() {
         end_time: newEvent.end.toISOString(),
       },
     });
+    notify("Request created successfully.", "success");
     return { error: null };
   };
 
@@ -294,7 +308,11 @@ export default function App() {
     if (!changed) return;
 
     if (changed.status === "rejected") {
-      await supabase.from("interviews").delete().eq("id", changed.id);
+      const { error } = await supabase.from("interviews").delete().eq("id", changed.id);
+      if (error) {
+        notify("Failed to reject pending request.", "error");
+        return;
+      }
       setEvents((prev) => prev.filter((e) => e.id !== changed.id));
       await insertLog({
         action: "rejected",
@@ -308,14 +326,19 @@ export default function App() {
           end_time: changed.end.toISOString(),
         },
       });
+      notify("Pending request rejected.", "error");
     } else {
-      await supabase
+      const { error } = await supabase
         .from("interviews")
         .update({
           status: changed.status,
           rejection_reason: changed.rejectionReason ?? null,
         })
         .eq("id", changed.id);
+      if (error) {
+        notify("Failed to approve pending request.", "error");
+        return;
+      }
       setEvents(updatedEvents);
       await insertLog({
         action: "approved",
@@ -329,6 +352,7 @@ export default function App() {
           end_time: changed.end.toISOString(),
         },
       });
+      notify("Pending request approved.", "success");
     }
   };
 
@@ -345,7 +369,7 @@ export default function App() {
     if (conflictingEvent)
       return { error: "This time slot overlaps with another interview." };
 
-    await supabase
+    const { error } = await supabase
       .from("interviews")
       .update({
         candidate: updatedEvent.candidate,
@@ -359,6 +383,10 @@ export default function App() {
         calendar: updatedEvent.calendar ?? "boys",
       })
       .eq("id", updatedEvent.id);
+    if (error) {
+      notify("Failed to update request.", "error");
+      return { error: "Failed to update request." };
+    }
 
     setEvents((prev) =>
       prev.map((e) => (e.id === updatedEvent.id ? updatedEvent : e)),
@@ -378,6 +406,7 @@ export default function App() {
         new_end: updatedEvent.end.toISOString(),
       },
     });
+    notify("Request updated successfully.", "success");
     return { error: null };
   };
 
@@ -386,7 +415,11 @@ export default function App() {
   /* ─────────────────────────────────────────────────────────── */
 
   const handleDeleteEvent = async (ev) => {
-    await supabase.from("interviews").delete().eq("id", ev.id);
+    const { error } = await supabase.from("interviews").delete().eq("id", ev.id);
+    if (error) {
+      notify("Failed to delete request.", "error");
+      return;
+    }
     setEvents((prev) => prev.filter((e) => e.id !== ev.id));
     setSelectedEvent(null);
     await insertLog({
@@ -401,6 +434,7 @@ export default function App() {
         end_time: ev.end.toISOString(),
       },
     });
+    notify("Request deleted successfully.", "error");
   };
 
   /* ─────────────────────────────────────────────────────────── */
@@ -441,6 +475,14 @@ export default function App() {
         setActiveCalendar={setActiveCalendar}
         blockedSlots={blockedSlots}
         onSaveBlock={handleSaveBlock}
+        notify={notify}
+      />
+
+      <ToastStack
+        notifications={notifications}
+        onDismiss={(id) =>
+          setNotifications((prev) => prev.filter((item) => item.id !== id))
+        }
       />
 
       {showNewReq && (

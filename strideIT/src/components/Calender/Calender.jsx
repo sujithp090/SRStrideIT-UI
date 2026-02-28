@@ -68,6 +68,7 @@ export default function CalendarView({
   setActiveCalendar,
   blockedSlots = [],
   onSaveBlock,
+  notify,
 }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -193,6 +194,7 @@ export default function CalendarView({
           user={user}
           showLabel={mobile}
           inlinePanel={mobile}
+          notify={notify}
         />
       )}
       <button
@@ -646,6 +648,7 @@ export default function CalendarView({
 
       {showUsersPanel && (
         <UsersPanel
+          notify={notify}
           onClose={() => {
             setShowUsersPanel(false);
             setActiveNav("calendar");

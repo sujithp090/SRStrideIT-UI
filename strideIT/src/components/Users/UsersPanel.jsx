@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 
-export default function UsersPanel({ onClose }) {
+export default function UsersPanel({ onClose, notify = () => {} }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -28,8 +28,18 @@ export default function UsersPanel({ onClose }) {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    await supabase.from("profiles").delete().eq("id", deleteTarget.id);
+    const { error } = await supabase
+      .from("profiles")
+      .delete()
+      .eq("id", deleteTarget.id);
+
+    if (error) {
+      notify("Failed to delete user.", "error");
+      return;
+    }
+
     setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
+    notify(`User deleted: ${deleteTarget.name}.`, "error");
     setDeleteTarget(null);
   };
 

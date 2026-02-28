@@ -5,6 +5,7 @@ export function SignupRequestsBell({
   user,
   showLabel = false,
   inlinePanel = false,
+  notify = () => {},
 }) {
   const [open, setOpen] = useState(false);
   const [requests, setRequests] = useState([]);
@@ -64,7 +65,7 @@ export function SignupRequestsBell({
     });
 
     if (signUpError) {
-      alert("Failed to create user: " + signUpError.message);
+      notify(`Failed to onboard user: ${signUpError.message}`, "error");
       setOnboarding(null);
       return;
     }
@@ -81,14 +82,35 @@ export function SignupRequestsBell({
         .eq("id", data.user.id);
     }
 
-    await supabase.from("signup_requests").update({ status: "approved" }).eq("id", req.id);
+    const { error: approvalError } = await supabase
+      .from("signup_requests")
+      .update({ status: "approved" })
+      .eq("id", req.id);
+
+    if (approvalError) {
+      notify("User created but request status update failed.", "error");
+      setOnboarding(null);
+      return;
+    }
+
     setRequests((prev) => prev.filter((r) => r.id !== req.id));
     setOnboarding(null);
+    notify(`User onboarded successfully: ${req.name}.`, "success");
   };
 
   const handleReject = async (req) => {
-    await supabase.from("signup_requests").update({ status: "rejected" }).eq("id", req.id);
+    const { error } = await supabase
+      .from("signup_requests")
+      .update({ status: "rejected" })
+      .eq("id", req.id);
+
+    if (error) {
+      notify("Failed to reject onboarding request.", "error");
+      return;
+    }
+
     setRequests((prev) => prev.filter((r) => r.id !== req.id));
+    notify(`Onboarding request rejected: ${req.name}.`, "error");
   };
 
   if (user?.role !== "admin") return null;
