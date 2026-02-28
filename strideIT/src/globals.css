@@ -506,6 +506,29 @@ figcaption {
   border-color: var(--white);
 }
 
+.cal-mobile-drawer-actions .signup-bell-wrap {
+  position: static;
+}
+
+.cal-mobile-drawer-actions .signup-bell-trigger {
+  justify-content: flex-start;
+}
+
+.cal-mobile-drawer-actions .signup-bell-wrap--inline .signup-bell-backdrop {
+  display: none;
+}
+
+.cal-mobile-drawer-actions .signup-bell-wrap--inline .signup-bell-panel {
+  position: relative;
+  top: 0;
+  right: auto;
+  left: auto;
+  width: 100%;
+  max-height: min(54dvh, 460px);
+  margin-top: 8px;
+  z-index: 2;
+}
+
 @media (min-width: 48rem) {
   .cal-navbar {
     padding: 0 16px;
@@ -2425,6 +2448,40 @@ select.modal-input::-ms-expand {
   background: #ef4444;
   font-weight: 700;
   color: #fff;
+}
+
+@media (max-width: 768px) {
+  .users-panel-drawer {
+    width: min(100vw, 420px);
+  }
+
+  .users-panel-header {
+    padding: 14px 16px;
+  }
+
+  .users-panel-list-wrap {
+    padding: 12px;
+  }
+
+  .users-panel-user-card {
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .users-panel-user-name-row {
+    flex-wrap: wrap;
+  }
+
+  .users-panel-email {
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .users-panel-delete-btn {
+    width: 36px;
+    height: 36px;
+  }
 }
 
 .app-spinner {

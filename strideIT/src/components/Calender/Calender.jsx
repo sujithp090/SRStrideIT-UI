@@ -153,7 +153,7 @@ export default function CalendarView({
 
   const closeMobileNav = () => setShowMobileNav(false);
 
-  const navActionItems = (
+  const renderNavActionItems = ({ mobile = false } = {}) => (
     <>
       <button
         className="cal-navbar-pill cal-navbar-pill--primary"
@@ -188,7 +188,13 @@ export default function CalendarView({
           {pendingCount} pending requests
         </button>
       )}
-      {user?.role === "admin" && <SignupRequestsBell user={user} />}
+      {user?.role === "admin" && (
+        <SignupRequestsBell
+          user={user}
+          showLabel={mobile}
+          inlinePanel={mobile}
+        />
+      )}
       <button
         className="cal-navbar-pill"
         onClick={() => {
@@ -211,7 +217,7 @@ export default function CalendarView({
           </span>
         </div>
         <div className="cal-navbar-spacer" />
-        <div className="cal-navbar-actions">{navActionItems}</div>
+        <div className="cal-navbar-actions">{renderNavActionItems()}</div>
         <button
           className="cal-navbar-menu-btn"
           onClick={() => setShowMobileNav(true)}
@@ -248,7 +254,9 @@ export default function CalendarView({
                 </svg>
               </button>
             </div>
-            <div className="cal-mobile-drawer-actions">{navActionItems}</div>
+            <div className="cal-mobile-drawer-actions">
+              {renderNavActionItems({ mobile: true })}
+            </div>
           </aside>
         </>
       )}

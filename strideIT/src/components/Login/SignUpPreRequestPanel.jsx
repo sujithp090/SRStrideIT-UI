@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 
-export function SignupRequestsBell({ user }) {
+export function SignupRequestsBell({
+  user,
+  showLabel = false,
+  inlinePanel = false,
+}) {
   const [open, setOpen] = useState(false);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -92,7 +96,9 @@ export function SignupRequestsBell({ user }) {
   const count = requests.length;
 
   return (
-    <div className="signup-bell-wrap">
+    <div
+      className={`signup-bell-wrap ${inlinePanel ? "signup-bell-wrap--inline" : ""}`}
+    >
       <button
         className="cal-navbar-pill signup-bell-trigger"
         onClick={() => {
@@ -114,6 +120,7 @@ export function SignupRequestsBell({ user }) {
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
+        {showLabel && <span>Signup Requests</span>}
         {count > 0 && <span className="signup-bell-badge">{count}</span>}
       </button>
 
