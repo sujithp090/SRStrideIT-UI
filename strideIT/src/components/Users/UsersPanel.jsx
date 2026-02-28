@@ -39,7 +39,7 @@ export default function UsersPanel({ onClose, notify = () => {} }) {
     }
 
     setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
-    notify(`User deleted: ${deleteTarget.name}.`, "success");
+    notify(`User deleted: ${deleteTarget.name}.`, "error");
     setDeleteTarget(null);
   };
 
