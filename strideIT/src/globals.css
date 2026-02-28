@@ -1074,9 +1074,21 @@ select.modal-input::-ms-expand {
   align-items: center;
   justify-content: center;
   background:
-    radial-gradient(circle at 14% 16%, rgba(125, 211, 252, 0.42), transparent 42%),
-    radial-gradient(circle at 80% 18%, rgba(147, 197, 253, 0.24), transparent 38%),
-    radial-gradient(circle at 86% 82%, rgba(59, 130, 246, 0.34), transparent 40%),
+    radial-gradient(
+      circle at 14% 16%,
+      rgba(125, 211, 252, 0.42),
+      transparent 42%
+    ),
+    radial-gradient(
+      circle at 80% 18%,
+      rgba(147, 197, 253, 0.24),
+      transparent 38%
+    ),
+    radial-gradient(
+      circle at 86% 82%,
+      rgba(59, 130, 246, 0.34),
+      transparent 40%
+    ),
     linear-gradient(135deg, #040b1f 0%, #102a52 36%, #1d4ed8 68%, #60a5fa 100%);
   font-family: "Poppins", system-ui, Avenir, Helvetica, Arial, sans-serif;
   position: relative;
@@ -1127,7 +1139,7 @@ select.modal-input::-ms-expand {
     rgba(255, 255, 255, 0.64) 55%,
     rgba(255, 255, 255, 0.58) 100%
   );
-  border-radius: 20px;
+  border-radius: 5px;
   padding: 48px 44px 40px;
   width: 100%;
   max-width: 420px;
@@ -1145,8 +1157,6 @@ select.modal-input::-ms-expand {
   animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
   overflow-y: auto;
 }
-
-
 
 .login-card::before {
   content: "";
@@ -2628,8 +2638,16 @@ select.modal-input::-ms-expand {
   justify-content: center;
   font-family: Poppins, sans-serif;
   background:
-    radial-gradient(circle at 14% 18%, rgba(96, 165, 250, 0.24), transparent 42%),
-    radial-gradient(circle at 82% 80%, rgba(59, 130, 246, 0.2), transparent 46%),
+    radial-gradient(
+      circle at 14% 18%,
+      rgba(96, 165, 250, 0.24),
+      transparent 42%
+    ),
+    radial-gradient(
+      circle at 82% 80%,
+      rgba(59, 130, 246, 0.2),
+      transparent 46%
+    ),
     linear-gradient(155deg, #eaf1ff 0%, #f8fbff 100%);
   padding: 20px;
 }
@@ -3050,7 +3068,7 @@ select.modal-input::-ms-expand {
 }
 .login-signup-subtitle {
   font-size: 12px;
-  color: #94a3b8;
+  color: #383c41;
   text-align: center;
   margin-bottom: 20px;
   margin-top: -8px;
@@ -3060,14 +3078,14 @@ select.modal-input::-ms-expand {
   margin-top: 14px;
 }
 .login-switch-text {
-  font-size: 12px;
-  color: #94a3b8;
+  font-size: 16px;
+  color: #494c51;
 }
 .login-switch-btn {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 16px;
   color: #3b82f6;
   font-weight: 600;
   font-family: Poppins, sans-serif;
