@@ -2810,6 +2810,45 @@ select.modal-input::-ms-expand {
 .restricted-filter-chip.active.restricted-tag-additional { border-width: 1px; }
 
 @media (max-width: 768px) {
+  :root {
+    --text-base: 0.9375rem;
+  }
+
+  body {
+    font-size: var(--text-base);
+  }
+
+  .login-title,
+  .restricted-title,
+  .logs-title,
+  .users-panel-title,
+  .cal-header-month {
+    font-size: clamp(1rem, 0.95rem + 0.35vw, 1.125rem);
+  }
+
+  .restricted-subtitle,
+  .logs-subtitle,
+  .users-panel-subtitle,
+  .cal-header-year,
+  .cal-navbar-pill,
+  .modal-label,
+  .modal-input,
+  .modal-select {
+    font-size: 0.8125rem;
+  }
+
+  .users-panel-user-name,
+  .users-panel-email,
+  .users-panel-username,
+  .users-panel-calendars,
+  .restricted-td,
+  .restricted-td-company,
+  .restricted-td-reason,
+  .logs-row,
+  .logs-meta {
+    font-size: 0.78rem;
+  }
+
   .restricted-overlay {
     align-items: flex-start;
     padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
