@@ -110,7 +110,7 @@ export function SignupRequestsBell({
     }
 
     setRequests((prev) => prev.filter((r) => r.id !== req.id));
-    notify(`Onboarding request rejected: ${req.name}.`, "success");
+    notify(`Onboarding request rejected: ${req.name}.`, "error");
   };
 
   if (user?.role !== "admin") return null;

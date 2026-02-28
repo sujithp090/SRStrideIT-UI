@@ -326,7 +326,7 @@ export default function App() {
           end_time: changed.end.toISOString(),
         },
       });
-      notify("Pending request rejected.", "success");
+      notify("Pending request rejected.", "error");
     } else {
       const { error } = await supabase
         .from("interviews")
@@ -434,7 +434,7 @@ export default function App() {
         end_time: ev.end.toISOString(),
       },
     });
-    notify("Request deleted successfully.", "success");
+    notify("Request deleted successfully.", "error");
   };
 
   /* ─────────────────────────────────────────────────────────── */
