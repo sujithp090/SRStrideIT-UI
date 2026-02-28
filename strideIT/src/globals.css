@@ -2775,7 +2775,7 @@ select.modal-input::-ms-expand {
 .restricted-filter-chip.active { background: #f1f5f9; border-color: #cbd5e1; }
 .restricted-filter-count { background: rgba(15,23,42,0.08); padding: 1px 6px; border-radius: 999px; font-size: 10px; }
 .restricted-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
-.restricted-table-wrap { flex: 1; overflow: auto; }
+.restricted-table-wrap { flex: 1; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; }
 .restricted-table { width: 100%; border-collapse: collapse; }
 .restricted-th { position: sticky; top: 0; background: #fff; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
 .restricted-th-index { width: 40px; }
@@ -2808,3 +2808,31 @@ select.modal-input::-ms-expand {
 .restricted-filter-chip.active.restricted-tag-small,
 .restricted-filter-chip.active.restricted-tag-bg,
 .restricted-filter-chip.active.restricted-tag-additional { border-width: 1px; }
+
+@media (max-width: 768px) {
+  .restricted-overlay {
+    align-items: flex-start;
+    padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+    overflow-y: auto;
+  }
+
+  .restricted-panel {
+    max-height: calc(100dvh - 20px);
+    border-radius: 14px;
+  }
+
+  .restricted-header,
+  .restricted-controls,
+  .restricted-footer {
+    padding-inline: 14px;
+  }
+
+  .restricted-notice {
+    margin-inline: 14px;
+  }
+
+  .restricted-table-wrap {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
