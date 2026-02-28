@@ -453,11 +453,22 @@ export default function App() {
   /* Loading                                                     */
   /* ─────────────────────────────────────────────────────────── */
 
-  const Spinner = ({ label }) => <div className="app-spinner">{label}</div>;
+  const Spinner = ({ label }) => (
+    <div className="app-spinner" role="status" aria-live="polite">
+      <div className="app-spinner-card">
+        <div className="app-spinner-rings" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="app-spinner-label">{label}</div>
+      </div>
+    </div>
+  );
 
-  if (authLoading) return <Spinner label="Loading..." />;
+  if (authLoading) return <Spinner label="Getting your workspace ready" />;
   if (!user) return <LoginScreen onLogin={(profile) => setUser(profile)} />;
-  if (eventsLoading) return <Spinner label="Loading interviews..." />;
+  if (eventsLoading) return <Spinner label="Syncing interview requests" />;
 
   return (
     <>
