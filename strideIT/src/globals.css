@@ -2819,6 +2819,7 @@ select.modal-input::-ms-expand {
   .restricted-panel {
     max-height: calc(100dvh - 20px);
     border-radius: 14px;
+    overflow-y: auto;
   }
 
   .restricted-header,
@@ -2832,6 +2833,9 @@ select.modal-input::-ms-expand {
   }
 
   .restricted-table-wrap {
+    flex: 0 0 auto;
+    min-height: 220px;
+    max-height: 45dvh;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
   }
