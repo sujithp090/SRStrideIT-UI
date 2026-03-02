@@ -950,7 +950,6 @@ select.modal-input::-ms-expand {
 .cal-event {
   position: relative;
   border-radius: 6px;
-  padding: 6px 8px;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
@@ -962,12 +961,39 @@ select.modal-input::-ms-expand {
   overflow: hidden;
   line-height: 1.2;
   display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: flex-start;
+  flex-direction: row;
+  align-items: stretch;
   word-wrap: break-word;
   word-break: break-word;
   margin: 2px 1px;
+  padding: 0;
+}
+
+.cal-event-main {
+  width: 80%;
+  padding: 6px 8px;
+}
+
+.cal-event-edit-zone {
+  width: 20%;
+  min-width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid rgba(15, 23, 42, 0.15);
+  background: rgba(15, 23, 42, 0.08);
+  color: rgba(15, 23, 42, 0.85);
+}
+
+.cal-event-edit-zone svg {
+  width: 14px;
+  height: 14px;
+}
+
+.cal-event-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .cal-event.spanning {
@@ -1022,6 +1048,16 @@ select.modal-input::-ms-expand {
   background: #fecaca;
   border-color: #7f1d1d;
   color: #7f1d1d;
+}
+
+.cal-event.cal-event-approved {
+  border: 1px solid #16a34a;
+  border-left-width: 4px;
+}
+
+.cal-event.cal-event-unapproved {
+  border: 1px solid #dc2626;
+  border-left-width: 4px;
 }
 
 .cal-event-title {
@@ -2087,8 +2123,11 @@ select.modal-input::-ms-expand {
   }
 
   .cal-event {
-    padding: 4px 6px;
     font-size: 10px;
+  }
+
+  .cal-event-main {
+    padding: 4px 6px;
   }
 
   .cal-event-title {
@@ -2293,6 +2332,9 @@ select.modal-input::-ms-expand {
 
   .cal-event {
     font-size: 10px;
+  }
+
+  .cal-event-main {
     padding: 3px 6px;
   }
 
@@ -2350,6 +2392,9 @@ select.modal-input::-ms-expand {
 
   .cal-event {
     font-size: 13px;
+  }
+
+  .cal-event-main {
     padding: 7px 10px;
   }
 
@@ -3285,19 +3330,10 @@ select.modal-input::-ms-expand {
   z-index: 4;
 }
 .cal-event-status {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-}
-.cal-event-status-approved {
-  width: 18px;
-  height: 18px;
-  background-color: #16a34a;
-  box-shadow: 0 1px 4px rgba(22, 163, 74, 0.5);
 }
 .cal-event-status-missing {
   width: 16px;
