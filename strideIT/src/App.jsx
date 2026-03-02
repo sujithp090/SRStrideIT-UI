@@ -111,7 +111,7 @@ export default function App() {
   const loadProfile = async (userId) => {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id, name, email, role, username, calendars")
+      .select("id, name, email, role, username, calendars, mobile")
       .eq("id", userId)
       .single();
     if (profile) setUser(profile);
