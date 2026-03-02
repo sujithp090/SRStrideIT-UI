@@ -20,6 +20,7 @@ const rowToEvent = (row) => ({
   status: row.status,
   image: row.image_url ?? null,
   rejectionReason: row.rejection_reason ?? null,
+  mobile: row.mobile ?? row.mobile_no ?? row.phone ?? "",
   calendar: row.calendar ?? "boys",
   start: new Date(row.start_time),
   end: new Date(row.end_time),

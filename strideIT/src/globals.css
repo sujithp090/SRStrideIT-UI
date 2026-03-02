@@ -1027,9 +1027,9 @@ select.modal-input::-ms-expand {
 
 /* ── Round-based color coding ──────────────────────────────── */
 .cal-event.round-l1 {
-  background: #dbeafe;
-  border-color: #3b82f6;
-  color: #1e40af;
+  background: #fef3c7;
+  border-color: #b45309;
+  color: #78350f;
 }
 
 .cal-event.round-l2 {
@@ -1051,13 +1051,15 @@ select.modal-input::-ms-expand {
 }
 
 .cal-event.cal-event-approved {
-  border: 1px solid #16a34a;
-  border-left-width: 4px;
+  border-top: 1px solid #16a34a;
+  border-right: 1px solid #16a34a;
+  border-bottom: 1px solid #16a34a;
 }
 
 .cal-event.cal-event-unapproved {
-  border: 1px solid #dc2626;
-  border-left-width: 4px;
+  border-top: 1px solid #dc2626;
+  border-right: 1px solid #dc2626;
+  border-bottom: 1px solid #dc2626;
 }
 
 .cal-event-title {
@@ -2123,23 +2125,24 @@ select.modal-input::-ms-expand {
   }
 
   .cal-event {
-    font-size: 10px;
+    font-size: 11px;
   }
 
   .cal-event-main {
-    padding: 4px 6px;
+    padding: 5px 7px;
   }
 
   .cal-event-title {
+    font-size: 10px;
+  }
+
+  .cal-event-company,
+  .cal-event-mobile {
     font-size: 9px;
   }
 
-  .cal-event-company {
-    font-size: 8px;
-  }
-
   .cal-event-time {
-    font-size: 7.5px;
+    font-size: 8.5px;
   }
 
   .modal-card {
@@ -2335,19 +2338,20 @@ select.modal-input::-ms-expand {
   }
 
   .cal-event-main {
-    padding: 3px 6px;
+    padding: 4px 6px;
   }
 
   .cal-event-title {
+    font-size: 8.5px;
+  }
+
+  .cal-event-company,
+  .cal-event-mobile {
     font-size: 8px;
   }
 
-  .cal-event-company {
-    font-size: 7.5px;
-  }
-
   .cal-event-time {
-    font-size: 7px;
+    font-size: 7.5px;
   }
 }
 

@@ -73,10 +73,24 @@ export default function CalendarView({
   const isMobileViewport = () =>
     typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
 
+  const getDialableNumber = (event) => {
+    const source = event?.mobile ?? event?.mobile_no ?? event?.phone ?? "";
+    const number = String(source).replace(/[^\d+]/g, "");
+    return number;
+  };
+
   const handleEventCardClick = (event) => {
     if (!isMobileViewport()) return;
-    if (!event?.mobile) return;
-    window.location.href = `tel:${String(event.mobile).replace(/[^\d+]/g, "")}`;
+    const number = getDialableNumber(event);
+    if (!number) {
+      notify && notify("Mobile number not available for this candidate.", "warning");
+      return;
+    }
+
+    const shouldCall = window.confirm(`Call ${number}?`);
+    if (!shouldCall) return;
+
+    window.open(`tel:${number}`, "_self");
   };
 
   const today = new Date();
