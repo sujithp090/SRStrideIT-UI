@@ -13,8 +13,11 @@ export default function LoginScreen({ onLogin }) {
   const [signupName, setSignupName] = useState("");
   const [signupUsername, setSignupUsername] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
+  const [signupMobile, setSignupMobile] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupDone, setSignupDone] = useState(false);
+
+  const normalizeMobile = (value) => value.replace(/\D/g, "");
 
   /* ── Login ── */
   const handleLogin = async () => {
@@ -25,14 +28,22 @@ export default function LoginScreen({ onLogin }) {
     }
     setLoading(true);
 
-    const input = username.trim().toLowerCase();
+    const rawInput = username.trim();
+    const usernameInput = rawInput.toLowerCase();
+    const mobileInput = normalizeMobile(rawInput);
+    const isMobileLogin = mobileInput.length >= 10;
 
     // Check if still pending approval
     const { data: pendingReq } = await supabase
       .from("signup_requests")
       .select("status")
-      .eq("username", input)
-      .single();
+      .eq("status", "pending")
+      .or(
+        isMobileLogin
+          ? `mobile.eq.${mobileInput}`
+          : `username.eq.${usernameInput}`,
+      )
+      .maybeSingle();
 
     if (pendingReq?.status === "pending") {
       setError("Your account is pending admin approval. Please wait.");
@@ -40,18 +51,20 @@ export default function LoginScreen({ onLogin }) {
       return;
     }
 
-    const { data: rpcData, error: rpcError } = await supabase.rpc(
-      "get_email_by_username",
-      { p_username: input },
-    );
+    const loginFilter = isMobileLogin
+      ? `mobile.eq.${mobileInput}`
+      : `username.eq.${usernameInput}`;
 
-    let email = null;
-    if (typeof rpcData === "string") email = rpcData;
-    else if (Array.isArray(rpcData) && rpcData.length > 0)
-      email = rpcData[0]?.get_email_by_username ?? Object.values(rpcData[0])[0];
+    const { data: account, error: accountError } = await supabase
+      .from("profiles")
+      .select("email")
+      .or(loginFilter)
+      .maybeSingle();
 
-    if (rpcError || !email) {
-      setError("No account found with that username.");
+    const email = account?.email || null;
+
+    if (accountError || !email) {
+      setError("No account found with that username/mobile number.");
       setLoading(false);
       return;
     }
@@ -67,7 +80,7 @@ export default function LoginScreen({ onLogin }) {
 
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("id, name, email, role, username, calendars")
+      .select("id, name, email, role, username, calendars, mobile")
       .eq("id", authData.user.id)
       .single();
 
@@ -89,6 +102,7 @@ export default function LoginScreen({ onLogin }) {
       !signupName.trim() ||
       !signupUsername.trim() ||
       !signupEmail.trim() ||
+      !signupMobile.trim() ||
       !signupPassword
     ) {
       setError("All fields are required.");
@@ -100,6 +114,12 @@ export default function LoginScreen({ onLogin }) {
     }
     if (!/^[a-z0-9_]+$/.test(signupUsername.trim())) {
       setError("Username: lowercase letters, numbers, underscores only.");
+      return;
+    }
+
+    const normalizedSignupMobile = normalizeMobile(signupMobile);
+    if (normalizedSignupMobile.length < 10) {
+      setError("Enter a valid mobile number.");
       return;
     }
 
@@ -130,12 +150,38 @@ export default function LoginScreen({ onLogin }) {
       return;
     }
 
+    const { data: existingMobileProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("mobile", normalizedSignupMobile)
+      .maybeSingle();
+
+    if (existingMobileProfile) {
+      setError("That mobile number is already in use.");
+      setLoading(false);
+      return;
+    }
+
+    const { data: existingMobileReq } = await supabase
+      .from("signup_requests")
+      .select("id")
+      .eq("mobile", normalizedSignupMobile)
+      .in("status", ["pending", "approved"])
+      .maybeSingle();
+
+    if (existingMobileReq) {
+      setError("A request with that mobile number already exists.");
+      setLoading(false);
+      return;
+    }
+
     const { error: insertError } = await supabase
       .from("signup_requests")
       .insert({
         name: signupName.trim(),
         username: signupUsername.trim().toLowerCase(),
         email: signupEmail.trim().toLowerCase(),
+        mobile: normalizedSignupMobile,
         password_hash: signupPassword,
         status: "pending",
       });
@@ -199,6 +245,7 @@ export default function LoginScreen({ onLogin }) {
                 setSignupName("");
                 setSignupUsername("");
                 setSignupEmail("");
+                setSignupMobile("");
                 setSignupPassword("");
               }}
             >
@@ -281,6 +328,20 @@ export default function LoginScreen({ onLogin }) {
               disabled={loading}
             />
           </div>
+          <div className="login-field">
+            <label className="login-label">Mobile Number</label>
+            <input
+              className="login-input"
+              type="tel"
+              placeholder="10-digit mobile number"
+              value={signupMobile}
+              onChange={(e) => setSignupMobile(e.target.value.replace(/\D/g, ""))}
+              onKeyDown={handleKeyDown}
+              disabled={loading}
+              inputMode="numeric"
+              maxLength={15}
+            />
+          </div>
 
           <button
             className="login-btn"
@@ -323,11 +384,11 @@ export default function LoginScreen({ onLogin }) {
         {error && <div className="login-error-msg">⚠ {error}</div>}
 
         <div className="login-field">
-          <label className="login-label">Username</label>
+          <label className="login-label">Username / Mobile Number</label>
           <input
             className={`login-input ${error ? "error" : ""}`}
             type="text"
-            placeholder="your_username"
+            placeholder="your_username or 9876543210"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             onKeyDown={handleKeyDown}

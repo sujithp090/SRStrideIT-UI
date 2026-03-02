@@ -75,6 +75,7 @@ export function SignupRequestsBell({
         .from("profiles")
         .update({
           username: req.username,
+          mobile: req.mobile ?? null,
           calendars: sel.calendars,
           role: sel.role,
           name: req.name,
@@ -184,6 +185,7 @@ export function SignupRequestsBell({
                           <div className="signup-bell-user-name">{req.name}</div>
                           <div className="signup-bell-user-username">@{req.username}</div>
                           <div className="signup-bell-user-email">{req.email}</div>
+                          {req.mobile && <div className="signup-bell-user-email">📞 {req.mobile}</div>}
                         </div>
                       </div>
 
