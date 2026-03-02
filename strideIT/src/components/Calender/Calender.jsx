@@ -133,8 +133,8 @@ export default function CalendarView({
   const visibleCalendars =
     user?.role === "admin"
       ? ["boys", "girls"]
-      : user?.calendar_access?.length
-        ? user.calendar_access
+      : user?.calendars?.length
+        ? user.calendars
         : ["boys"];
 
   useEffect(() => {
@@ -242,7 +242,11 @@ export default function CalendarView({
             aria-label="Close navigation menu"
             onClick={closeMobileNav}
           />
-          <aside id="cal-mobile-drawer" className="cal-mobile-drawer" role="dialog">
+          <aside
+            id="cal-mobile-drawer"
+            className="cal-mobile-drawer"
+            role="dialog"
+          >
             <div className="cal-mobile-drawer-header">
               <h2>Menu</h2>
               <button
@@ -481,7 +485,10 @@ export default function CalendarView({
                       {/* Background cell lines */}
                       <div className="cal-grid-bg-row">
                         {HOURS.map((_, i) => (
-                          <div key={i} className={`cal-grid-bg-cell ${isToday ? "today" : ""}`} />
+                          <div
+                            key={i}
+                            className={`cal-grid-bg-cell ${isToday ? "today" : ""}`}
+                          />
                         ))}
                       </div>
 
@@ -529,11 +536,21 @@ export default function CalendarView({
                       {dayEvents.map((ev) => {
                         const startSlot = Math.max(
                           0,
-                          Math.floor((ev.start.getHours() * 60 + ev.start.getMinutes() - GRID_START) / 30),
+                          Math.floor(
+                            (ev.start.getHours() * 60 +
+                              ev.start.getMinutes() -
+                              GRID_START) /
+                              30,
+                          ),
                         );
                         const endSlot = Math.min(
                           SLOT_COUNT,
-                          Math.ceil((ev.end.getHours() * 60 + ev.end.getMinutes() - GRID_START) / 30),
+                          Math.ceil(
+                            (ev.end.getHours() * 60 +
+                              ev.end.getMinutes() -
+                              GRID_START) /
+                              30,
+                          ),
                         );
                         const span = Math.max(1, endSlot - startSlot);
                         if (startSlot >= SLOT_COUNT) return null;
@@ -555,7 +572,10 @@ export default function CalendarView({
                             }}
                           >
                             {ev.status === "approved" ? (
-                              <div className="cal-event-status cal-event-status-approved" title="Approved">
+                              <div
+                                className="cal-event-status cal-event-status-approved"
+                                title="Approved"
+                              >
                                 <svg
                                   width="10"
                                   height="10"
@@ -570,7 +590,10 @@ export default function CalendarView({
                                 </svg>
                               </div>
                             ) : !ev.image ? (
-                              <div className="cal-event-status cal-event-status-missing" title="No image uploaded">
+                              <div
+                                className="cal-event-status cal-event-status-missing"
+                                title="No image uploaded"
+                              >
                                 <svg
                                   width="10"
                                   height="10"
@@ -587,10 +610,13 @@ export default function CalendarView({
                               </div>
                             ) : null}
                             <div className="cal-event-title">
-                              {ev.candidate}
+                              Name: {ev.candidate}
                             </div>
                             <div className="cal-event-company">
-                              {ev.company}
+                              Company: {ev.company}
+                            </div>
+                            <div className="cal-event-mobile">
+                              Mobile no: {ev.mobile}
                             </div>
                             <div className="cal-event-time">
                               {ev.start.toLocaleTimeString([], {
@@ -603,9 +629,6 @@ export default function CalendarView({
                                 minute: "2-digit",
                               })}
                             </div>
-                            {ev.status === "pending" && (
-                              <div className="cal-event-pending-bar" />
-                            )}
                           </div>
                         );
                       })}

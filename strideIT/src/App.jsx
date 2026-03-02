@@ -110,7 +110,7 @@ export default function App() {
   const loadProfile = async (userId) => {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id, name, email, role, username")
+      .select("id, name, email, role, username, calendars")
       .eq("id", userId)
       .single();
     if (profile) setUser(profile);
@@ -308,7 +308,10 @@ export default function App() {
     if (!changed) return;
 
     if (changed.status === "rejected") {
-      const { error } = await supabase.from("interviews").delete().eq("id", changed.id);
+      const { error } = await supabase
+        .from("interviews")
+        .delete()
+        .eq("id", changed.id);
       if (error) {
         notify("Failed to reject pending request.", "error");
         return;
@@ -415,7 +418,10 @@ export default function App() {
   /* ─────────────────────────────────────────────────────────── */
 
   const handleDeleteEvent = async (ev) => {
-    const { error } = await supabase.from("interviews").delete().eq("id", ev.id);
+    const { error } = await supabase
+      .from("interviews")
+      .delete()
+      .eq("id", ev.id);
     if (error) {
       notify("Failed to delete request.", "error");
       return;
