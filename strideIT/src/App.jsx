@@ -43,7 +43,18 @@ const normalizeProfile = (profile) => ({
   calendars: normalizeCalendars(profile?.calendars),
 });
 
-const rowToEvent = (row) => ({
+const firstNonEmptyValue = (...values) => {
+  for (const value of values) {
+    if (value === null || value === undefined) continue;
+    const normalized = String(value).trim();
+    if (normalized) return normalized;
+  }
+  return "";
+};
+
+const normalizeLookupKey = (value) => String(value ?? "").trim().toLowerCase();
+
+const rowToEvent = (row, profileMobileByCandidate = {}, defaultMobile = "") => ({
   id: row.id,
   candidate: row.candidate,
   company: row.company,
@@ -51,7 +62,13 @@ const rowToEvent = (row) => ({
   status: row.status,
   image: row.image_url ?? null,
   rejectionReason: row.rejection_reason ?? null,
-  mobile: row.mobile ?? row.mobile_no ?? row.phone ?? "",
+  mobile: firstNonEmptyValue(
+    row.mobile,
+    row.mobile_no,
+    row.phone,
+    profileMobileByCandidate[normalizeLookupKey(row.candidate)],
+    defaultMobile,
+  ),
   calendar: normalizeCalendar(row.calendar),
   start: new Date(row.start_time),
   end: new Date(row.end_time),
@@ -166,7 +183,40 @@ export default function App() {
       .from("interviews")
       .select("*")
       .order("start_time", { ascending: true });
-    if (!error) setEvents(data.map(rowToEvent));
+
+    if (!error && data) {
+      const profileMobileByCandidate = {};
+      let fallbackProfileMobile = firstNonEmptyValue(user?.mobile);
+
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("name, username, mobile");
+
+      (profiles ?? []).forEach((profile) => {
+        const mobile = firstNonEmptyValue(profile.mobile);
+        if (!mobile) return;
+
+        fallbackProfileMobile = firstNonEmptyValue(fallbackProfileMobile, mobile);
+
+        const nameKey = normalizeLookupKey(profile.name);
+        const usernameKey = normalizeLookupKey(profile.username);
+
+        if (nameKey && !profileMobileByCandidate[nameKey]) {
+          profileMobileByCandidate[nameKey] = mobile;
+        }
+
+        if (usernameKey && !profileMobileByCandidate[usernameKey]) {
+          profileMobileByCandidate[usernameKey] = mobile;
+        }
+      });
+
+      setEvents(
+        data.map((row) =>
+          rowToEvent(row, profileMobileByCandidate, fallbackProfileMobile),
+        ),
+      );
+    }
+
     setEventsLoading(false);
   };
 
