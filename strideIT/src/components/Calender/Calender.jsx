@@ -565,7 +565,7 @@ export default function CalendarView({
                             (ev.start.getHours() * 60 +
                               ev.start.getMinutes() -
                               GRID_START) /
-                              10,
+                              30,
                           ),
                         );
                         const endSlot = Math.min(
