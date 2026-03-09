@@ -656,7 +656,10 @@ select.modal-input::-ms-expand {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, width 0.22s ease, justify-content 0.22s ease;
+  transition:
+    background 0.2s,
+    width 0.22s ease,
+    justify-content 0.22s ease;
   color: rgba(255, 255, 255, 0.55);
   position: relative;
   white-space: nowrap;
@@ -677,7 +680,9 @@ select.modal-input::-ms-expand {
   opacity: 0;
   max-width: 0;
   overflow: hidden;
-  transition: opacity 0.18s ease, max-width 0.22s ease;
+  transition:
+    opacity 0.18s ease,
+    max-width 0.22s ease;
 }
 
 .cal-sidebar:hover .cal-sidebar-btn[title]::after {
@@ -949,7 +954,10 @@ select.modal-input::-ms-expand {
 }
 .cal-day-row {
   display: grid;
-  grid-template-columns: var(--cal-row-header-width) repeat(26, var(--cal-time-col-width));
+  grid-template-columns: var(--cal-row-header-width) repeat(
+      26,
+      var(--cal-time-col-width)
+    );
   border-bottom: 1px solid var(--gray-100);
   gap: 0;
   min-height: 56px;
@@ -3396,8 +3404,8 @@ select.modal-input::-ms-expand {
   top: 2px;
   bottom: 2px;
   z-index: 4;
-  left: calc(var(--event-start-minutes, 0) * 3px);
-  width: calc((var(--event-duration-minutes, 30) * 4.5px));
+  left: calc(var(--event-start-minutes, 0) * 2.85px);
+  width: calc((var(--event-duration-minutes, 30) * 4.2px));
 }
 .cal-event-status {
   display: inline-flex;
@@ -4488,4 +4496,3 @@ select.modal-input::-ms-expand {
   background: #f1c40f;
   color: #1f2937;
 }
-
