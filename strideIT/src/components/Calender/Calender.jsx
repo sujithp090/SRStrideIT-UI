@@ -8,7 +8,6 @@ import strideMainLogo from "../../assets/strideMainLogo.svg";
 import { SignupRequestsBell } from "../Login/SignUpPreRequestPanel";
 
 const SLOT_COUNT = 26;
-const SLOT_WIDTH_PX = 90;
 const GRID_START = 8 * 60; // 8:00 AM in minutes
 const GRID_END = GRID_START + SLOT_COUNT * 30;
 
@@ -573,10 +572,10 @@ export default function CalendarView({
                         const clampedStart = Math.max(startMinutes, GRID_START);
                         const clampedEnd = Math.min(endMinutes, GRID_END);
 
-                        const leftPx = ((clampedStart - GRID_START) / 30) * SLOT_WIDTH_PX;
-                        const widthPx = Math.max(
-                          ((clampedEnd - clampedStart) / 30) * SLOT_WIDTH_PX - 2,
-                          20,
+                        const eventStartMinutes = clampedStart - GRID_START;
+                        const eventDurationMinutes = Math.max(
+                          clampedEnd - clampedStart,
+                          1,
                         );
 
                         let roundClass = "pending";
@@ -594,7 +593,10 @@ export default function CalendarView({
                                 ? "cal-event-approved"
                                 : "cal-event-unapproved"
                             } cal-event-pos`}
-                            style={{ left: `${leftPx}px`, width: `${widthPx}px` }}
+                            style={{
+                              "--event-start-minutes": eventStartMinutes,
+                              "--event-duration-minutes": eventDurationMinutes,
+                            }}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleEventCardClick(ev);
