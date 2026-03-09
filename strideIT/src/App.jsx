@@ -52,7 +52,9 @@ const firstNonEmptyValue = (...values) => {
   return "";
 };
 
-const rowToEvent = (row) => ({
+const normalizeLookupKey = (value) => String(value ?? "").trim().toLowerCase();
+
+const rowToEvent = (row, profileMobileByCandidate = {}) => ({
   id: row.id,
   candidate: row.candidate,
   company: row.company,
@@ -60,7 +62,12 @@ const rowToEvent = (row) => ({
   status: row.status,
   image: row.image_url ?? null,
   rejectionReason: row.rejection_reason ?? null,
-  mobile: firstNonEmptyValue(row.mobile, row.mobile_no, row.phone),
+  mobile: firstNonEmptyValue(
+    row.mobile,
+    row.mobile_no,
+    row.phone,
+    profileMobileByCandidate[normalizeLookupKey(row.candidate)],
+  ),
   calendar: normalizeCalendar(row.calendar),
   start: new Date(row.start_time),
   end: new Date(row.end_time),
@@ -175,7 +182,49 @@ export default function App() {
       .from("interviews")
       .select("*")
       .order("start_time", { ascending: true });
-    if (!error) setEvents(data.map(rowToEvent));
+
+    if (!error && data) {
+      const candidates = [...new Set(data.map((row) => String(row.candidate ?? "").trim()))]
+        .filter(Boolean);
+
+      const profileMobileByCandidate = {};
+
+      if (candidates.length) {
+        const [{ data: nameMatches }, { data: usernameMatches }] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("name, mobile")
+            .in("name", candidates),
+          supabase
+            .from("profiles")
+            .select("username, mobile")
+            .in("username", candidates),
+        ]);
+
+        (nameMatches ?? []).forEach((profile) => {
+          const key = normalizeLookupKey(profile.name);
+          if (key) {
+            profileMobileByCandidate[key] = firstNonEmptyValue(
+              profileMobileByCandidate[key],
+              profile.mobile,
+            );
+          }
+        });
+
+        (usernameMatches ?? []).forEach((profile) => {
+          const key = normalizeLookupKey(profile.username);
+          if (key) {
+            profileMobileByCandidate[key] = firstNonEmptyValue(
+              profileMobileByCandidate[key],
+              profile.mobile,
+            );
+          }
+        });
+      }
+
+      setEvents(data.map((row) => rowToEvent(row, profileMobileByCandidate)));
+    }
+
     setEventsLoading(false);
   };
 
