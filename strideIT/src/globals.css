@@ -646,6 +646,13 @@ select.modal-input::-ms-expand {
   }
 }
 
+@media (hover: none), (pointer: coarse) {
+  .cal-sidebar {
+    width: 180px;
+    align-items: stretch;
+  }
+}
+
 .cal-sidebar-btn {
   width: 36px;
   height: 36px;
@@ -671,6 +678,15 @@ select.modal-input::-ms-expand {
   }
 }
 
+@media (hover: none), (pointer: coarse) {
+  .cal-sidebar .cal-sidebar-btn {
+    width: calc(100% - 20px);
+    justify-content: flex-start;
+    padding-left: 10px;
+    gap: 10px;
+  }
+}
+
 .cal-sidebar-btn::after {
   content: attr(title);
   font-size: 12px;
@@ -686,6 +702,13 @@ select.modal-input::-ms-expand {
   .cal-sidebar:hover .cal-sidebar-btn[title]::after {
     opacity: 1;
     max-width: 160px;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .cal-sidebar .cal-sidebar-btn[title]::after {
+    opacity: 1;
+    max-width: 130px;
   }
 }
 
@@ -2101,8 +2124,9 @@ select.modal-input::-ms-expand {
   }
 
   .cal-sidebar {
-    width: 44px;
+    width: 180px;
     padding: 12px 0;
+    align-items: stretch;
   }
 
   .cal-sidebar-btn {
@@ -2427,7 +2451,8 @@ select.modal-input::-ms-expand {
   }
 
   .cal-sidebar {
-    width: 40px;
+    width: 160px;
+    align-items: stretch;
   }
 }
 
@@ -3356,6 +3381,13 @@ select.modal-input::-ms-expand {
   .cal-sidebar:hover .cal-calendar-switch {
     width: calc(100% - 20px);
     max-width: 160px;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .cal-sidebar .cal-calendar-switch {
+    width: calc(100% - 20px);
+    max-width: 130px;
   }
 }
 .cal-calendar-switch.active {
@@ -4493,4 +4525,28 @@ select.modal-input::-ms-expand {
   border-color: #f1c40f;
   background: #f1c40f;
   color: #1f2937;
+}
+
+@media (max-width: 768px) and (hover: none), (max-width: 768px) and (pointer: coarse) {
+  .cal-sidebar {
+    width: 180px;
+    align-items: stretch;
+  }
+
+  .cal-sidebar .cal-sidebar-btn {
+    width: calc(100% - 20px);
+    justify-content: flex-start;
+    padding-left: 10px;
+    gap: 10px;
+  }
+
+  .cal-sidebar .cal-sidebar-btn[title]::after {
+    opacity: 1;
+    max-width: 130px;
+  }
+
+  .cal-sidebar .cal-calendar-switch {
+    width: calc(100% - 20px);
+    max-width: 130px;
+  }
 }
