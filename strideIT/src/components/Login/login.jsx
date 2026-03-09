@@ -23,6 +23,55 @@ export default function LoginScreen({ onLogin }) {
     return num.replace(/\D/g, "").slice(-10);
   };
 
+  const getProfileByUserId = async (userId) => {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id, name, email, role, username, calendars, mobile")
+      .eq("id", userId)
+      .single();
+
+    return profile;
+  };
+
+  const resolveLoginAccount = async ({ rawInput, usernameInput, mobileInput }) => {
+    const strippedInput = rawInput.replace(/[\s()+-]/g, "");
+    const isMobileLookup = /^\d+$/.test(strippedInput);
+
+    if (isMobileLookup && mobileInput.length >= 10) {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, email, username")
+        .eq("mobile", mobileInput)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    }
+
+    const { data: exactUser, error: exactUserError } = await supabase
+      .from("profiles")
+      .select("id, email, username")
+      .eq("username", usernameInput)
+      .maybeSingle();
+
+    if (exactUserError) throw exactUserError;
+    if (exactUser) return exactUser;
+
+    const { data: looseMatches, error: looseMatchesError } = await supabase
+      .from("profiles")
+      .select("id, email, username")
+      .ilike("username", `%${usernameInput}%`)
+      .limit(20);
+
+    if (looseMatchesError) throw looseMatchesError;
+
+    return (
+      looseMatches?.find(
+        (item) => item.username?.trim().toLowerCase() === usernameInput,
+      ) ?? null
+    );
+  };
+
   /* ── Login ── */
   const handleLogin = async () => {
     setError("");
@@ -32,25 +81,24 @@ export default function LoginScreen({ onLogin }) {
       const rawInput = username.trim();
       const usernameInput = rawInput.toLowerCase();
       const mobileInput = normalizeMobile(rawInput);
-      const strippedInput = rawInput.replace(/[\s()+-]/g, "");
-      const isMobileLookup = /^\d+$/.test(strippedInput);
+      const isEmailInput = /@/.test(usernameInput);
 
-      // 🔎 Find account by mobile OR username (properly)
-      let query = supabase.from("profiles").select("id, email");
+      let email = null;
 
-      if (isMobileLookup && mobileInput.length >= 10) {
-        query = query.eq("mobile", mobileInput);
+      if (isEmailInput) {
+        email = usernameInput;
       } else {
-        query = query.eq("username", usernameInput);
+        const account = await resolveLoginAccount({
+          rawInput,
+          usernameInput,
+          mobileInput,
+        });
+
+        email = account?.email || null;
       }
 
-      const { data: account, error: accountError } = await query.maybeSingle();
-
-      const email = account?.email || null;
-
-      if (accountError || !email) {
+      if (!email) {
         setError("No account found with that username/mobile number.");
-        setLoading(false);
         return;
       }
 
@@ -65,27 +113,19 @@ export default function LoginScreen({ onLogin }) {
 
       if (loginError) {
         setError("Invalid password.");
-        setLoading(false);
         return;
       }
 
       if (loginData?.user?.id) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("id, name, email, role, username, calendars, mobile")
-          .eq("id", loginData.user.id)
-          .single();
-
-        if (profile) {
-          onLogin(profile);
-        }
+        const profile = await getProfileByUserId(loginData.user.id);
+        if (profile) onLogin(profile);
       }
     } catch (err) {
       console.error(err);
       setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   /* ── Signup ── */
