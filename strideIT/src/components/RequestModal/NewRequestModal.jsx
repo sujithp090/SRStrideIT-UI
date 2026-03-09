@@ -181,7 +181,6 @@ export function NewRequestModal({
 
   return (
     <ModalChrome onClose={onClose}>
-
       <div className="modal-body">
         <div className="modal-header-wrapper">
           <div className="modal-section-header">
@@ -404,7 +403,7 @@ export function NewRequestModal({
             </svg>
             <div>
               <div className="modal-restricted-warn-title">
-                ⚠️ Restricted Company
+                Restricted Company
               </div>
               <div className="modal-restricted-warn-reason">
                 <strong>{restrictedInfo.name}</strong> — {restrictedInfo.reason}

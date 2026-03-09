@@ -28,14 +28,16 @@ export function SignupRequestsBell({
       setRequests(data);
       const init = {};
       data.forEach((r) => {
-        if (!selections[r.id]) init[r.id] = { calendars: ["boys"], role: "user" };
+        if (!selections[r.id])
+          init[r.id] = { calendars: ["boys"], role: "user" };
       });
       setSelections((prev) => ({ ...init, ...prev }));
     }
     setLoading(false);
   };
 
-  const getSel = (id) => selections[id] || { calendars: ["boys"], role: "user" };
+  const getSel = (id) =>
+    selections[id] || { calendars: ["boys"], role: "user" };
 
   const toggleCal = (id, cal) => {
     const s = getSel(id);
@@ -54,48 +56,52 @@ export function SignupRequestsBell({
     setSelections((prev) => ({ ...prev, [id]: { ...getSel(id), role } }));
 
   const handleApprove = async (req) => {
-    const sel = getSel(req.id);
-    if (sel.calendars.length === 0) return;
-    setOnboarding(req.id);
+    try {
+      setOnboarding(req.id);
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email: req.email,
-      password: req.password_hash,
-      options: { data: { name: req.name, role: sel.role } },
-    });
+      // 1️⃣ Create auth user
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: req.email,
+        password: req.password_hash,
+        email_confirm: true,
+      });
 
-    if (signUpError) {
-      notify(`Failed to onboard user: ${signUpError.message}`, "error");
-      setOnboarding(null);
-      return;
+      if (error) {
+        notify(`Failed to onboard user: ${error.message}`, "error");
+        setOnboarding(null);
+        return;
+      }
+
+      // 2️⃣ Insert into profiles (linked to auth user id)
+      const { error: profileError } = await supabase.from("profiles").insert({
+        id: data.user.id,
+        username: req.username,
+        mobile: req.mobile,
+        calendars: req.calendars,
+        role: req.role,
+        name: req.name,
+        email: req.email,
+      });
+
+      if (profileError) {
+        notify(`Profile insert failed: ${profileError.message}`, "error");
+        setOnboarding(null);
+        return;
+      }
+
+      // 3️⃣ Delete signup request
+      await supabase.from("signup_requests").delete().eq("id", req.id);
+
+      notify("User approved successfully!", "success");
+
+      // refresh list
+      fetchRequests();
+    } catch (err) {
+      console.error(err);
+      notify("Something went wrong during approval.", "error");
     }
 
-    if (data.user) {
-      await supabase
-        .from("profiles")
-        .update({
-          username: req.username,
-          calendars: sel.calendars,
-          role: sel.role,
-          name: req.name,
-        })
-        .eq("id", data.user.id);
-    }
-
-    const { error: approvalError } = await supabase
-      .from("signup_requests")
-      .update({ status: "approved" })
-      .eq("id", req.id);
-
-    if (approvalError) {
-      notify("User created but request status update failed.", "error");
-      setOnboarding(null);
-      return;
-    }
-
-    setRequests((prev) => prev.filter((r) => r.id !== req.id));
     setOnboarding(null);
-    notify(`User onboarded successfully: ${req.name}.`, "success");
   };
 
   const handleReject = async (req) => {
@@ -148,15 +154,31 @@ export function SignupRequestsBell({
 
       {open && (
         <>
-          <div className="signup-bell-backdrop" onClick={() => setOpen(false)} />
+          <div
+            className="signup-bell-backdrop"
+            onClick={() => setOpen(false)}
+          />
           <div className="signup-bell-panel">
             <div className="signup-bell-header">
               <div className="signup-bell-title">
                 Signup Requests
-                {count > 0 && <span className="signup-bell-count">{count}</span>}
+                {count > 0 && (
+                  <span className="signup-bell-count">{count}</span>
+                )}
               </div>
-              <button onClick={() => setOpen(false)} className="signup-bell-close">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <button
+                onClick={() => setOpen(false)}
+                className="signup-bell-close"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                >
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -170,7 +192,9 @@ export function SignupRequestsBell({
                 <div className="signup-bell-empty">
                   <div className="signup-bell-empty-icon">✅</div>
                   <div className="signup-bell-empty-title">All clear!</div>
-                  <div className="signup-bell-empty-sub">No pending signup requests.</div>
+                  <div className="signup-bell-empty-sub">
+                    No pending signup requests.
+                  </div>
                 </div>
               ) : (
                 requests.map((req) => {
@@ -179,11 +203,24 @@ export function SignupRequestsBell({
                   return (
                     <div key={req.id} className="signup-bell-card">
                       <div className="signup-bell-card-head">
-                        <div className="signup-bell-avatar">{(req.name || "U").charAt(0).toUpperCase()}</div>
+                        <div className="signup-bell-avatar">
+                          {(req.name || "U").charAt(0).toUpperCase()}
+                        </div>
                         <div className="signup-bell-user-meta">
-                          <div className="signup-bell-user-name">{req.name}</div>
-                          <div className="signup-bell-user-username">@{req.username}</div>
-                          <div className="signup-bell-user-email">{req.email}</div>
+                          <div className="signup-bell-user-name">
+                            {req.name}
+                          </div>
+                          <div className="signup-bell-user-username">
+                            @{req.username}
+                          </div>
+                          <div className="signup-bell-user-email">
+                            {req.email}
+                          </div>
+                          {req.mobile && (
+                            <div className="signup-bell-user-email">
+                              📞 {req.mobile}
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -230,7 +267,9 @@ export function SignupRequestsBell({
                           onClick={() => handleApprove(req)}
                           disabled={isProcessing || sel.calendars.length === 0}
                           className={`signup-bell-btn signup-bell-btn-approve ${
-                            isProcessing || sel.calendars.length === 0 ? "is-disabled" : ""
+                            isProcessing || sel.calendars.length === 0
+                              ? "is-disabled"
+                              : ""
                           }`}
                         >
                           {isProcessing ? "Onboarding..." : "✓ Onboard"}

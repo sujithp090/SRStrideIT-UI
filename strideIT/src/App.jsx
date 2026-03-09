@@ -20,6 +20,7 @@ const rowToEvent = (row) => ({
   status: row.status,
   image: row.image_url ?? null,
   rejectionReason: row.rejection_reason ?? null,
+  mobile: row.mobile ?? row.mobile_no ?? row.phone ?? "",
   calendar: row.calendar ?? "boys",
   start: new Date(row.start_time),
   end: new Date(row.end_time),
@@ -110,7 +111,7 @@ export default function App() {
   const loadProfile = async (userId) => {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id, name, email, role, username, calendars")
+      .select("id, name, email, role, username, calendars, mobile")
       .eq("id", userId)
       .single();
     if (profile) setUser(profile);

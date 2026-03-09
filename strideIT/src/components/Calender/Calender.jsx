@@ -70,6 +70,31 @@ export default function CalendarView({
   onSaveBlock,
   notify,
 }) {
+  const isMobileViewport = () =>
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 768px)").matches;
+
+  const getDialableNumber = (event) => {
+    const source = event?.mobile ?? event?.mobile_no ?? event?.phone ?? "";
+    const number = String(source).replace(/[^\d+]/g, "");
+    return number;
+  };
+
+  const handleEventCardClick = (event) => {
+    if (!isMobileViewport()) return;
+    const number = getDialableNumber(event);
+    if (!number) {
+      notify &&
+        notify("Mobile number not available for this candidate.", "warning");
+      return;
+    }
+
+    const shouldCall = window.confirm(`Call ${number}?`);
+    if (!shouldCall) return;
+
+    window.open(`tel:${number}`, "_self");
+  };
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -540,7 +565,7 @@ export default function CalendarView({
                             (ev.start.getHours() * 60 +
                               ev.start.getMinutes() -
                               GRID_START) /
-                              30,
+                              10,
                           ),
                         );
                         const endSlot = Math.min(
@@ -565,69 +590,82 @@ export default function CalendarView({
                         return (
                           <div
                             key={ev.id}
-                            className={`cal-event ${roundClass} cal-event-pos cal-col-${startSlot} cal-span-${span}`}
+                            className={`cal-event ${roundClass} ${
+                              ev.status === "approved"
+                                ? "cal-event-approved"
+                                : "cal-event-unapproved"
+                            } cal-event-pos cal-col-${startSlot} cal-span-${span}`}
                             onClick={(e) => {
                               e.stopPropagation();
-                              onEventClick && onEventClick(ev);
+                              handleEventCardClick(ev);
                             }}
                           >
-                            {ev.status === "approved" ? (
-                              <div
-                                className="cal-event-status cal-event-status-approved"
-                                title="Approved"
-                              >
-                                <svg
-                                  width="10"
-                                  height="10"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="white"
-                                  strokeWidth="3.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                >
-                                  <polyline points="20 6 9 17 4 12" />
-                                </svg>
+                            <div className="cal-event-main">
+                              <div className="cal-event-title-row">
+                                <div className="cal-event-title">
+                                  Name: {ev.candidate}
+                                </div>
+                                {!ev.image ? (
+                                  <div
+                                    className="cal-event-status cal-event-status-missing"
+                                    title="No image uploaded"
+                                  >
+                                    <svg
+                                      width="10"
+                                      height="10"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="#dc2626"
+                                      strokeWidth="3"
+                                      strokeLinecap="round"
+                                    >
+                                      <circle cx="12" cy="12" r="10" />
+                                      <line x1="12" y1="8" x2="12" y2="12" />
+                                      <line
+                                        x1="12"
+                                        y1="16"
+                                        x2="12.01"
+                                        y2="16"
+                                      />
+                                    </svg>
+                                  </div>
+                                ) : null}
                               </div>
-                            ) : !ev.image ? (
-                              <div
-                                className="cal-event-status cal-event-status-missing"
-                                title="No image uploaded"
-                              >
-                                <svg
-                                  width="10"
-                                  height="10"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="#dc2626"
-                                  strokeWidth="3"
-                                  strokeLinecap="round"
-                                >
-                                  <circle cx="12" cy="12" r="10" />
-                                  <line x1="12" y1="8" x2="12" y2="12" />
-                                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                                </svg>
+                              <div className="cal-event-company">
+                                Company: {ev.company}
                               </div>
-                            ) : null}
-                            <div className="cal-event-title">
-                              Name: {ev.candidate}
+                              <div className="cal-event-mobile">
+                                Mobile no: {ev.mobile}
+                              </div>
+                              <div className="cal-event-time">
+                                {ev.start.toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                                {" – "}
+                                {ev.end.toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </div>
                             </div>
-                            <div className="cal-event-company">
-                              Company: {ev.company}
-                            </div>
-                            <div className="cal-event-mobile">
-                              Mobile no: {ev.mobile}
-                            </div>
-                            <div className="cal-event-time">
-                              {ev.start.toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                              {" – "}
-                              {ev.end.toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
+                            <div
+                              className="cal-event-edit-zone"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEventClick && onEventClick(ev);
+                              }}
+                              title="Edit interview"
+                            >
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                              >
+                                <path d="M12 20h9" />
+                                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                              </svg>
                             </div>
                           </div>
                         );
