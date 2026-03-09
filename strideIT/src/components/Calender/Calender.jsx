@@ -565,7 +565,10 @@ export default function CalendarView({
                         const endMinutes =
                           ev.end.getHours() * 60 + ev.end.getMinutes();
 
-                        if (endMinutes <= GRID_START || startMinutes >= GRID_END) {
+                        if (
+                          endMinutes <= GRID_START ||
+                          startMinutes >= GRID_END
+                        ) {
                           return null;
                         }
 
@@ -577,7 +580,8 @@ export default function CalendarView({
                           clampedEnd - clampedStart,
                           1,
                         );
-                        const eventEndMinutes = eventStartMinutes + eventDurationMinutes;
+                        const eventEndMinutes =
+                          eventStartMinutes + eventDurationMinutes;
 
                         let roundClass = "pending";
                         if (ev.round === "L1") roundClass = "round-l1";
@@ -585,7 +589,15 @@ export default function CalendarView({
                         else if (ev.round === "Client round")
                           roundClass = "round-client";
                         else if (ev.round) roundClass = "round-custom";
-
+                        console.log({
+                          candidate: ev.candidate,
+                          eventStartMinutes,
+                          eventDurationMinutes,
+                          startMinutes,
+                          endMinutes,
+                          GRID_START,
+                          GRID_END,
+                        });
                         return (
                           <div
                             key={ev.id}
