@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import strideLogoLogin from "../../assets/strideLogoLogin.svg";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginScreen({ onLogin }) {
   const [mode, setMode] = useState("login"); // "login" | "signup"
@@ -16,82 +17,59 @@ export default function LoginScreen({ onLogin }) {
   const [signupMobile, setSignupMobile] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupDone, setSignupDone] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const normalizeMobile = (value) => value.replace(/\D/g, "");
+  const normalizeMobile = (num) => {
+    return num.replace(/\D/g, "").slice(-10);
+  };
 
   /* ── Login ── */
   const handleLogin = async () => {
     setError("");
-    if (!username.trim() || !password) {
-      setError("Please enter your username and password.");
-      return;
-    }
     setLoading(true);
 
-    const rawInput = username.trim();
-    const usernameInput = rawInput.toLowerCase();
-    const mobileInput = normalizeMobile(rawInput);
-    const isMobileLogin = mobileInput.length >= 10;
+    try {
+      const rawInput = username.trim();
+      const usernameInput = rawInput.toLowerCase();
+      const mobileInput = normalizeMobile(rawInput);
 
-    // Check if still pending approval
-    const { data: pendingReq } = await supabase
-      .from("signup_requests")
-      .select("status")
-      .eq("status", "pending")
-      .or(
-        isMobileLogin
-          ? `mobile.eq.${mobileInput}`
-          : `username.eq.${usernameInput}`,
-      )
-      .maybeSingle();
+      // 🔎 Find account by mobile OR username (properly)
+      let query = supabase.from("profiles").select("username");
 
-    if (pendingReq?.status === "pending") {
-      setError("Your account is pending admin approval. Please wait.");
-      setLoading(false);
-      return;
+      if (mobileInput.length >= 10) {
+        query = query.eq("mobile", mobileInput);
+      } else {
+        query = query.eq("username", usernameInput);
+      }
+
+      const { data: account, error: accountError } = await query.maybeSingle();
+
+      const email = account?.email || null;
+
+      if (accountError || !email) {
+        setError("No account found with that username/mobile number.");
+        setLoading(false);
+        return;
+      }
+
+      // 🔐 Sign in using email + password
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (loginError) {
+        setError("Invalid password.");
+        setLoading(false);
+        return;
+      }
+
+      navigate("/dashboard");
+    } catch (err) {
+      console.error(err);
+      setError("Something went wrong. Please try again.");
     }
 
-    const loginFilter = isMobileLogin
-      ? `mobile.eq.${mobileInput}`
-      : `username.eq.${usernameInput}`;
-
-    const { data: account, error: accountError } = await supabase
-      .from("profiles")
-      .select("email")
-      .or(loginFilter)
-      .maybeSingle();
-
-    const email = account?.email || null;
-
-    if (accountError || !email) {
-      setError("No account found with that username/mobile number.");
-      setLoading(false);
-      return;
-    }
-
-    const { data: authData, error: authError } =
-      await supabase.auth.signInWithPassword({ email, password });
-
-    if (authError) {
-      setError("Invalid username or password.");
-      setLoading(false);
-      return;
-    }
-
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("id, name, email, role, username, calendars, mobile")
-      .eq("id", authData.user.id)
-      .single();
-
-    if (profileError || !profile) {
-      setError("Account setup incomplete. Contact your admin.");
-      await supabase.auth.signOut();
-      setLoading(false);
-      return;
-    }
-
-    onLogin(profile);
     setLoading(false);
   };
 
@@ -211,9 +189,7 @@ export default function LoginScreen({ onLogin }) {
             </div>
           </div>
           <div className="login-success-content">
-            <div
-              className="login-success-icon"
-            >
+            <div className="login-success-icon">
               <svg
                 width="26"
                 height="26"
@@ -226,14 +202,8 @@ export default function LoginScreen({ onLogin }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
-            <div
-              className="login-success-title"
-            >
-              Request Submitted!
-            </div>
-            <div
-              className="login-success-text"
-            >
+            <div className="login-success-title">Request Submitted!</div>
+            <div className="login-success-text">
               Your signup request has been sent to the admin. You'll be able to
               log in once your account is approved.
             </div>
@@ -335,7 +305,9 @@ export default function LoginScreen({ onLogin }) {
               type="tel"
               placeholder="10-digit mobile number"
               value={signupMobile}
-              onChange={(e) => setSignupMobile(e.target.value.replace(/\D/g, ""))}
+              onChange={(e) =>
+                setSignupMobile(e.target.value.replace(/\D/g, ""))
+              }
               onKeyDown={handleKeyDown}
               disabled={loading}
               inputMode="numeric"
@@ -352,9 +324,7 @@ export default function LoginScreen({ onLogin }) {
           </button>
 
           <div className="login-switch-row">
-            <span className="login-switch-text">
-              Already have an account?{" "}
-            </span>
+            <span className="login-switch-text">Already have an account? </span>
             <button
               onClick={() => {
                 setMode("login");
@@ -388,7 +358,7 @@ export default function LoginScreen({ onLogin }) {
           <input
             className={`login-input ${error ? "error" : ""}`}
             type="text"
-            placeholder="your_username or 9876543210"
+            placeholder="your username or Mobile no"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -399,15 +369,27 @@ export default function LoginScreen({ onLogin }) {
         </div>
         <div className="login-field">
           <label className="login-label">Password</label>
-          <input
-            className={`login-input ${error ? "error" : ""}`}
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={loading}
-          />
+
+          <div className="password-wrapper">
+            <input
+              className={`login-input ${error ? "error" : ""}`}
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={loading}
+            />
+
+            <button
+              type="button"
+              className="toggle-password"
+              onClick={() => setShowPassword(!showPassword)}
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
         </div>
 
         <button className="login-btn" onClick={handleLogin} disabled={loading}>
@@ -415,9 +397,7 @@ export default function LoginScreen({ onLogin }) {
         </button>
 
         <div className="login-switch-row">
-          <span className="login-switch-text">
-            Don't have an account?{" "}
-          </span>
+          <span className="login-switch-text">Don't have an account? </span>
           <button
             onClick={() => {
               setMode("signup");

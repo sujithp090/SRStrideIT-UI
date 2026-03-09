@@ -583,9 +583,33 @@ select.modal-input::-ms-expand {
   display: none;
 }
 .cal-navbar-pill:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(41, 39, 113, 0.2);
+}
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
+.password-wrapper .login-input {
+  width: 100%;
+  padding-right: 40px; /* space for icon */
+}
+
+.toggle-password {
+  position: absolute;
+  right: 0px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: #666;
+}
+
+.toggle-password:hover {
+  color: #000;
+}
 .cal-navbar-pill .dot {
   width: 8px;
   height: 8px;
@@ -951,7 +975,6 @@ select.modal-input::-ms-expand {
   position: relative;
   border-radius: 6px;
   font-size: 11px;
-  font-weight: 600;
   cursor: pointer;
   z-index: 2;
   border-left: 4px solid;
@@ -961,21 +984,22 @@ select.modal-input::-ms-expand {
   overflow: hidden;
   line-height: 1.2;
   display: flex;
+  height: 100%;
   flex-direction: row;
   align-items: stretch;
   word-wrap: break-word;
   word-break: break-word;
-  margin: 2px 1px;
   padding: 0;
 }
 
 .cal-event-main {
-  width: 80%;
+  width: 85%;
   padding: 6px 8px;
+  background-color: #d6eaf8;
 }
 
 .cal-event-edit-zone {
-  width: 20%;
+  width: 15%;
   min-width: 28px;
   display: flex;
   align-items: center;
@@ -1059,14 +1083,14 @@ select.modal-input::-ms-expand {
 }
 
 .cal-event-company {
-  font-weight: 500;
+  font-weight: bold;
   font-size: 11px;
   opacity: 0.9;
   margin: 2px 0;
 }
 
 .cal-event-time {
-  font-weight: 400;
+  font-weight: bold;
   font-size: 10.5px;
   opacity: 0.8;
 }
