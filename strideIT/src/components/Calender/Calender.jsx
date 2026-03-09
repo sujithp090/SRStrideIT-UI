@@ -589,15 +589,6 @@ export default function CalendarView({
                         else if (ev.round === "Client round")
                           roundClass = "round-client";
                         else if (ev.round) roundClass = "round-custom";
-                        console.log({
-                          candidate: ev.candidate,
-                          eventStartMinutes,
-                          eventDurationMinutes,
-                          startMinutes,
-                          endMinutes,
-                          GRID_START,
-                          GRID_END,
-                        });
                         return (
                           <div
                             key={ev.id}
