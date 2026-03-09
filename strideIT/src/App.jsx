@@ -184,43 +184,27 @@ export default function App() {
       .order("start_time", { ascending: true });
 
     if (!error && data) {
-      const candidates = [...new Set(data.map((row) => String(row.candidate ?? "").trim()))]
-        .filter(Boolean);
-
       const profileMobileByCandidate = {};
 
-      if (candidates.length) {
-        const [{ data: nameMatches }, { data: usernameMatches }] = await Promise.all([
-          supabase
-            .from("profiles")
-            .select("name, mobile")
-            .in("name", candidates),
-          supabase
-            .from("profiles")
-            .select("username, mobile")
-            .in("username", candidates),
-        ]);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("name, username, mobile");
 
-        (nameMatches ?? []).forEach((profile) => {
-          const key = normalizeLookupKey(profile.name);
-          if (key) {
-            profileMobileByCandidate[key] = firstNonEmptyValue(
-              profileMobileByCandidate[key],
-              profile.mobile,
-            );
-          }
-        });
+      (profiles ?? []).forEach((profile) => {
+        const mobile = firstNonEmptyValue(profile.mobile);
+        if (!mobile) return;
 
-        (usernameMatches ?? []).forEach((profile) => {
-          const key = normalizeLookupKey(profile.username);
-          if (key) {
-            profileMobileByCandidate[key] = firstNonEmptyValue(
-              profileMobileByCandidate[key],
-              profile.mobile,
-            );
-          }
-        });
-      }
+        const nameKey = normalizeLookupKey(profile.name);
+        const usernameKey = normalizeLookupKey(profile.username);
+
+        if (nameKey && !profileMobileByCandidate[nameKey]) {
+          profileMobileByCandidate[nameKey] = mobile;
+        }
+
+        if (usernameKey && !profileMobileByCandidate[usernameKey]) {
+          profileMobileByCandidate[usernameKey] = mobile;
+        }
+      });
 
       setEvents(data.map((row) => rowToEvent(row, profileMobileByCandidate)));
     }
