@@ -12,6 +12,37 @@ import {
 /* Utils                                                        */
 /* ─────────────────────────────────────────────────────────── */
 
+const normalizeCalendar = (value) => {
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (["girl", "female", "women", "womens"].includes(normalized)) {
+    return "girls";
+  }
+
+  if (["boy", "male", "men", "mens"].includes(normalized)) {
+    return "boys";
+  }
+
+  if (["boys", "girls", "both"].includes(normalized)) {
+    return normalized;
+  }
+
+  return "boys";
+};
+
+const normalizeCalendars = (calendars) => {
+  if (!Array.isArray(calendars) || calendars.length === 0) return ["boys"];
+
+  return [...new Set(calendars.map((item) => normalizeCalendar(item)))];
+};
+
+const normalizeProfile = (profile) => ({
+  ...profile,
+  calendars: normalizeCalendars(profile?.calendars),
+});
+
 const rowToEvent = (row) => ({
   id: row.id,
   candidate: row.candidate,
@@ -21,7 +52,7 @@ const rowToEvent = (row) => ({
   image: row.image_url ?? null,
   rejectionReason: row.rejection_reason ?? null,
   mobile: row.mobile ?? row.mobile_no ?? row.phone ?? "",
-  calendar: row.calendar ?? "boys",
+  calendar: normalizeCalendar(row.calendar),
   start: new Date(row.start_time),
   end: new Date(row.end_time),
 });
@@ -114,7 +145,7 @@ export default function App() {
       .select("id, name, email, role, username, calendars, mobile")
       .eq("id", userId)
       .single();
-    if (profile) setUser(profile);
+    if (profile) setUser(normalizeProfile(profile));
   };
 
   /* ─────────────────────────────────────────────────────────── */
@@ -474,7 +505,7 @@ export default function App() {
   );
 
   if (authLoading) return <Spinner label="Getting your workspace ready" />;
-  if (!user) return <LoginScreen onLogin={(profile) => setUser(profile)} />;
+  if (!user) return <LoginScreen onLogin={(profile) => setUser(normalizeProfile(profile))} />;
   if (eventsLoading) return <Spinner label="Syncing interview requests" />;
 
   return (
