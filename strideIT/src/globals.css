@@ -2885,6 +2885,9 @@ select.modal-input::-ms-expand {
   border-bottom: 1px solid #f1f5f9;
   align-items: center;
 }
+.logs-row > div {
+  min-width: 0;
+}
 .logs-row > div:not(:last-child) {
   border-right: 1px solid #f1f5f9;
   padding-right: 20px;
@@ -2911,12 +2914,15 @@ select.modal-input::-ms-expand {
 .logs-user {
   font-weight: 500;
   color: #0f172a;
+  overflow-wrap: anywhere;
 }
 .logs-meta {
   font-size: 13px;
   color: #475569;
   line-height: 1.6;
   padding-right: 12px;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 .badge {
   padding: 4px 10px;
