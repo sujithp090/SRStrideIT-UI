@@ -57,6 +57,25 @@ const normalizeLookupKey = (value) =>
     .trim()
     .toLowerCase();
 
+const getMobileByCandidateKey = (profiles = [], candidate) => {
+  const candidateKey = normalizeLookupKey(candidate);
+  if (!candidateKey) return "";
+
+  for (const profile of profiles) {
+    const mobile = firstNonEmptyValue(profile?.mobile);
+    if (!mobile) continue;
+
+    const nameKey = normalizeLookupKey(profile?.name);
+    const usernameKey = normalizeLookupKey(profile?.username);
+
+    if (candidateKey === nameKey || candidateKey === usernameKey) {
+      return mobile;
+    }
+  }
+
+  return "";
+};
+
 const rowToEvent = (row, profileMobileByCandidate = {}) => ({
   id: row.id,
   candidate: row.candidate,
@@ -328,6 +347,15 @@ export default function App() {
       };
     }
 
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("name, username, mobile");
+
+    const candidateMobile = firstNonEmptyValue(
+      getMobileByCandidateKey(profiles, formData.candidate),
+      user?.mobile,
+    );
+
     const { data, error } = await supabase
       .from("interviews")
       .insert({
@@ -339,7 +367,7 @@ export default function App() {
         end_time: formData.end.toISOString(),
         image_url: formData.image ?? null,
         calendar: formData.calendar ?? "boys",
-        mobile: firstNonEmptyValue(user?.mobile),
+        mobile: candidateMobile,
       })
       .select()
       .single();
