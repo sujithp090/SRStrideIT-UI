@@ -338,7 +338,7 @@ export default function App() {
         end_time: formData.end.toISOString(),
         image_url: formData.image ?? null,
         calendar: formData.calendar ?? "boys",
-        mobile: firstNonEmptyValue(user?.mobile),
+        phone: firstNonEmptyValue(user?.mobile),
       })
       .select()
       .single();
