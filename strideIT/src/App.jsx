@@ -43,6 +43,15 @@ const normalizeProfile = (profile) => ({
   calendars: normalizeCalendars(profile?.calendars),
 });
 
+const firstNonEmptyValue = (...values) => {
+  for (const value of values) {
+    if (value === null || value === undefined) continue;
+    const normalized = String(value).trim();
+    if (normalized) return normalized;
+  }
+  return "";
+};
+
 const rowToEvent = (row) => ({
   id: row.id,
   candidate: row.candidate,
@@ -51,7 +60,7 @@ const rowToEvent = (row) => ({
   status: row.status,
   image: row.image_url ?? null,
   rejectionReason: row.rejection_reason ?? null,
-  mobile: row.mobile ?? row.mobile_no ?? row.phone ?? "",
+  mobile: firstNonEmptyValue(row.mobile, row.mobile_no, row.phone),
   calendar: normalizeCalendar(row.calendar),
   start: new Date(row.start_time),
   end: new Date(row.end_time),
