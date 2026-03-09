@@ -52,7 +52,10 @@ const firstNonEmptyValue = (...values) => {
   return "";
 };
 
-const normalizeLookupKey = (value) => String(value ?? "").trim().toLowerCase();
+const normalizeLookupKey = (value) =>
+  String(value ?? "")
+    .trim()
+    .toLowerCase();
 
 const rowToEvent = (row, profileMobileByCandidate = {}) => ({
   id: row.id,
@@ -206,9 +209,7 @@ export default function App() {
         }
       });
 
-      setEvents(
-        data.map((row) => rowToEvent(row, profileMobileByCandidate)),
-      );
+      setEvents(data.map((row) => rowToEvent(row, profileMobileByCandidate)));
     }
 
     setEventsLoading(false);
@@ -338,7 +339,7 @@ export default function App() {
         end_time: formData.end.toISOString(),
         image_url: formData.image ?? null,
         calendar: formData.calendar ?? "boys",
-        phone: firstNonEmptyValue(user?.mobile),
+        mobile: firstNonEmptyValue(user?.mobile),
       })
       .select()
       .single();
@@ -550,7 +551,10 @@ export default function App() {
   );
 
   if (authLoading) return <Spinner label="Getting your workspace ready" />;
-  if (!user) return <LoginScreen onLogin={(profile) => setUser(normalizeProfile(profile))} />;
+  if (!user)
+    return (
+      <LoginScreen onLogin={(profile) => setUser(normalizeProfile(profile))} />
+    );
   if (eventsLoading) return <Spinner label="Syncing interview requests" />;
 
   return (
