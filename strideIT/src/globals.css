@@ -639,9 +639,11 @@ select.modal-input::-ms-expand {
   transition: width 0.22s ease;
 }
 
-.cal-sidebar:hover {
-  width: 220px;
-  align-items: stretch;
+@media (hover: hover) and (pointer: fine) {
+  .cal-sidebar:hover {
+    width: 220px;
+    align-items: stretch;
+  }
 }
 
 .cal-sidebar-btn {
@@ -660,11 +662,13 @@ select.modal-input::-ms-expand {
   white-space: nowrap;
 }
 
-.cal-sidebar:hover .cal-sidebar-btn {
-  width: calc(100% - 20px);
-  justify-content: flex-start;
-  padding-left: 10px;
-  gap: 10px;
+@media (hover: hover) and (pointer: fine) {
+  .cal-sidebar:hover .cal-sidebar-btn {
+    width: calc(100% - 20px);
+    justify-content: flex-start;
+    padding-left: 10px;
+    gap: 10px;
+  }
 }
 
 .cal-sidebar-btn::after {
@@ -678,9 +682,11 @@ select.modal-input::-ms-expand {
   transition: opacity 0.18s ease, max-width 0.22s ease;
 }
 
-.cal-sidebar:hover .cal-sidebar-btn[title]::after {
-  opacity: 1;
-  max-width: 160px;
+@media (hover: hover) and (pointer: fine) {
+  .cal-sidebar:hover .cal-sidebar-btn[title]::after {
+    opacity: 1;
+    max-width: 160px;
+  }
 }
 
 .cal-sidebar-btn:hover,
@@ -3327,6 +3333,8 @@ select.modal-input::-ms-expand {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
+  align-items: center;
 }
 .cal-calendar-switch {
   width: 60px;
@@ -3338,6 +3346,17 @@ select.modal-input::-ms-expand {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  text-align: center;
+}
+@media (hover: hover) and (pointer: fine) {
+  .cal-sidebar:hover .cal-calendar-switches {
+    align-items: center;
+  }
+
+  .cal-sidebar:hover .cal-calendar-switch {
+    width: calc(100% - 20px);
+    max-width: 160px;
+  }
 }
 .cal-calendar-switch.active {
   border: 2px solid #0ea5e9;
