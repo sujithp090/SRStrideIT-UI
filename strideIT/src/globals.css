@@ -336,6 +336,8 @@ figcaption {
 
 /* ── Wrapper ────────────────────────────────────────────────── */
 .cal-root {
+  --cal-row-header-width: 120px;
+  --cal-time-col-width: 90px;
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -635,6 +637,13 @@ select.modal-input::-ms-expand {
   padding: 12px 0;
   gap: 6px;
   flex-shrink: 0;
+  overflow: hidden;
+  transition: width 0.22s ease;
+}
+
+.cal-sidebar:hover {
+  width: 220px;
+  align-items: stretch;
 }
 
 .cal-sidebar-btn {
@@ -647,8 +656,38 @@ select.modal-input::-ms-expand {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
+  transition:
+    background 0.2s,
+    width 0.22s ease,
+    justify-content 0.22s ease;
   color: rgba(255, 255, 255, 0.55);
+  position: relative;
+  white-space: nowrap;
+}
+
+.cal-sidebar:hover .cal-sidebar-btn {
+  width: calc(100% - 20px);
+  justify-content: flex-start;
+  padding-left: 10px;
+  gap: 10px;
+}
+
+.cal-sidebar-btn::after {
+  content: attr(title);
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+  opacity: 0;
+  max-width: 0;
+  overflow: hidden;
+  transition:
+    opacity 0.18s ease,
+    max-width 0.22s ease;
+}
+
+.cal-sidebar:hover .cal-sidebar-btn[title]::after {
+  opacity: 1;
+  max-width: 160px;
 }
 
 .cal-sidebar-btn:hover,
@@ -853,8 +892,8 @@ select.modal-input::-ms-expand {
 }
 
 .cal-times-header-corner {
-  width: 120px;
-  min-width: 120px;
+  width: var(--cal-row-header-width);
+  min-width: var(--cal-row-header-width);
   flex-shrink: 0;
   border-right: 1.5px solid var(--gray-100);
   position: sticky;
@@ -877,8 +916,8 @@ select.modal-input::-ms-expand {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 90px;
-  flex: 0 0 90px;
+  min-width: var(--cal-time-col-width);
+  flex: 0 0 var(--cal-time-col-width);
 }
 
 /* ── Grid with vertical layout (days on Y, time on X) ──────────── */
@@ -915,7 +954,10 @@ select.modal-input::-ms-expand {
 }
 .cal-day-row {
   display: grid;
-  grid-template-columns: 120px repeat(26, 90px);
+  grid-template-columns: var(--cal-row-header-width) repeat(
+      26,
+      var(--cal-time-col-width)
+    );
   border-bottom: 1px solid var(--gray-100);
   gap: 0;
   min-height: 56px;
@@ -2111,8 +2153,9 @@ select.modal-input::-ms-expand {
     gap: 4px;
   }
 
-  .cal-times-header {
-    grid-template-columns: 100px repeat(26, 75px);
+  .cal-root {
+    --cal-row-header-width: 100px;
+    --cal-time-col-width: 75px;
   }
 
   .cal-time-header-cell {
@@ -2121,7 +2164,6 @@ select.modal-input::-ms-expand {
   }
 
   .cal-day-row {
-    grid-template-columns: 100px repeat(26, 75px);
     min-height: 70px;
   }
 
@@ -2244,8 +2286,9 @@ select.modal-input::-ms-expand {
     font-size: 18px;
   }
 
-  .cal-times-header {
-    grid-template-columns: 110px repeat(26, 75px);
+  .cal-root {
+    --cal-row-header-width: 110px;
+    --cal-time-col-width: 75px;
   }
 
   .cal-time-header-cell {
@@ -2253,7 +2296,6 @@ select.modal-input::-ms-expand {
   }
 
   .cal-day-row {
-    grid-template-columns: 110px repeat(26, 75px);
     min-height: 37px;
   }
 
@@ -2285,8 +2327,9 @@ select.modal-input::-ms-expand {
     padding: 12px 18px;
   }
 
-  .cal-times-header {
-    grid-template-columns: 115px repeat(26, 80px);
+  .cal-root {
+    --cal-row-header-width: 115px;
+    --cal-time-col-width: 80px;
   }
 
   .cal-time-header-cell {
@@ -2294,7 +2337,6 @@ select.modal-input::-ms-expand {
   }
 
   .cal-day-row {
-    grid-template-columns: 115px repeat(26, 80px);
     min-height: 39px;
   }
 
@@ -2318,8 +2360,9 @@ select.modal-input::-ms-expand {
     padding: 14px 24px;
   }
 
-  .cal-times-header {
-    grid-template-columns: 120px repeat(26, 80px);
+  .cal-root {
+    --cal-row-header-width: 120px;
+    --cal-time-col-width: 80px;
   }
 
   .cal-time-header-cell {
@@ -2327,7 +2370,6 @@ select.modal-input::-ms-expand {
   }
 
   .cal-day-row {
-    grid-template-columns: 120px repeat(26, 80px);
     min-height: 40px;
   }
 
@@ -2395,12 +2437,12 @@ select.modal-input::-ms-expand {
 
 /* High resolution screens (2x pixel density and up) */
 @media (min-width: 1920px) {
-  .cal-times-header {
-    grid-template-columns: 140px repeat(26, 85px);
+  .cal-root {
+    --cal-row-header-width: 140px;
+    --cal-time-col-width: 85px;
   }
 
   .cal-day-row {
-    grid-template-columns: 140px repeat(26, 85px);
     min-height: 50px;
   }
 
@@ -3295,6 +3337,8 @@ select.modal-input::-ms-expand {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
+  align-items: center;
 }
 .cal-calendar-switch {
   width: 60px;
@@ -3306,6 +3350,15 @@ select.modal-input::-ms-expand {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  text-align: center;
+}
+.cal-sidebar:hover .cal-calendar-switches {
+  align-items: center;
+}
+
+.cal-sidebar:hover .cal-calendar-switch {
+  width: calc(100% - 20px);
+  max-width: 160px;
 }
 .cal-calendar-switch.active {
   border: 2px solid #0ea5e9;
@@ -3325,7 +3378,7 @@ select.modal-input::-ms-expand {
 }
 .cal-day-grid-area {
   position: relative;
-  width: calc(26 * 90px);
+  width: calc(26 * var(--cal-time-col-width));
   flex-shrink: 0;
   --timeline-total-minutes: 780;
 }
@@ -3335,9 +3388,9 @@ select.modal-input::-ms-expand {
 }
 .cal-grid-bg-cell {
   box-sizing: border-box;
-  width: 90px;
-  min-width: 90px;
-  max-width: 90px;
+  width: var(--cal-time-col-width);
+  min-width: var(--cal-time-col-width);
+  max-width: var(--cal-time-col-width);
   flex-shrink: 0;
   border-right: 1px solid #f1f5f9;
   height: 100%;
@@ -3351,8 +3404,8 @@ select.modal-input::-ms-expand {
   top: 2px;
   bottom: 2px;
   z-index: 4;
-  left: calc(var(--event-start-minutes, 0) * 3px);
-  width: calc((var(--event-duration-minutes, 30) * 4.5px));
+  left: calc(var(--event-start-minutes, 0) * 2.85px);
+  width: calc((var(--event-duration-minutes, 30) * 4.2px));
 }
 .cal-event-status {
   display: inline-flex;
@@ -3390,7 +3443,7 @@ select.modal-input::-ms-expand {
 }
 .cal-block-bar-full {
   left: 0;
-  width: calc(26 * 90px);
+  width: calc(26 * var(--cal-time-col-width));
   background: rgba(220, 38, 38, 0.1);
   border-left-width: 4px;
 }
@@ -3404,185 +3457,185 @@ select.modal-input::-ms-expand {
   font-size: 11px;
 }
 .cal-col-0 {
-  left: calc(0 * 90px);
+  left: calc(0 * var(--cal-time-col-width));
 }
 .cal-col-1 {
-  left: calc(1 * 90px);
+  left: calc(1 * var(--cal-time-col-width));
 }
 .cal-col-2 {
-  left: calc(2 * 90px);
+  left: calc(2 * var(--cal-time-col-width));
 }
 .cal-col-3 {
-  left: calc(3 * 90px);
+  left: calc(3 * var(--cal-time-col-width));
 }
 .cal-col-4 {
-  left: calc(4 * 90px);
+  left: calc(4 * var(--cal-time-col-width));
 }
 .cal-col-5 {
-  left: calc(5 * 90px);
+  left: calc(5 * var(--cal-time-col-width));
 }
 .cal-col-6 {
-  left: calc(6 * 90px);
+  left: calc(6 * var(--cal-time-col-width));
 }
 .cal-col-7 {
-  left: calc(7 * 90px);
+  left: calc(7 * var(--cal-time-col-width));
 }
 .cal-col-8 {
-  left: calc(8 * 90px);
+  left: calc(8 * var(--cal-time-col-width));
 }
 .cal-col-9 {
-  left: calc(9 * 90px);
+  left: calc(9 * var(--cal-time-col-width));
 }
 .cal-col-10 {
-  left: calc(10 * 90px);
+  left: calc(10 * var(--cal-time-col-width));
 }
 .cal-col-11 {
-  left: calc(11 * 90px);
+  left: calc(11 * var(--cal-time-col-width));
 }
 .cal-col-12 {
-  left: calc(12 * 90px);
+  left: calc(12 * var(--cal-time-col-width));
 }
 .cal-col-13 {
-  left: calc(13 * 90px);
+  left: calc(13 * var(--cal-time-col-width));
 }
 .cal-col-14 {
-  left: calc(14 * 90px);
+  left: calc(14 * var(--cal-time-col-width));
 }
 .cal-col-15 {
-  left: calc(15 * 90px);
+  left: calc(15 * var(--cal-time-col-width));
 }
 .cal-col-16 {
-  left: calc(16 * 90px);
+  left: calc(16 * var(--cal-time-col-width));
 }
 .cal-col-17 {
-  left: calc(17 * 90px);
+  left: calc(17 * var(--cal-time-col-width));
 }
 .cal-col-18 {
-  left: calc(18 * 90px);
+  left: calc(18 * var(--cal-time-col-width));
 }
 .cal-col-19 {
-  left: calc(19 * 90px);
+  left: calc(19 * var(--cal-time-col-width));
 }
 .cal-col-20 {
-  left: calc(20 * 90px);
+  left: calc(20 * var(--cal-time-col-width));
 }
 .cal-col-21 {
-  left: calc(21 * 90px);
+  left: calc(21 * var(--cal-time-col-width));
 }
 .cal-col-22 {
-  left: calc(22 * 90px);
+  left: calc(22 * var(--cal-time-col-width));
 }
 .cal-col-23 {
-  left: calc(23 * 90px);
+  left: calc(23 * var(--cal-time-col-width));
 }
 .cal-col-24 {
-  left: calc(24 * 90px);
+  left: calc(24 * var(--cal-time-col-width));
 }
 .cal-col-25 {
-  left: calc(25 * 90px);
+  left: calc(25 * var(--cal-time-col-width));
 }
 .cal-span-1 {
-  width: calc(1 * 90px - 2px);
+  width: calc(1 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-2 {
-  width: calc(2 * 90px - 2px);
+  width: calc(2 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-3 {
-  width: calc(3 * 90px - 2px);
+  width: calc(3 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-4 {
-  width: calc(4 * 90px - 2px);
+  width: calc(4 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-5 {
-  width: calc(5 * 90px - 2px);
+  width: calc(5 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-6 {
-  width: calc(6 * 90px - 2px);
+  width: calc(6 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-7 {
-  width: calc(7 * 90px - 2px);
+  width: calc(7 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-8 {
-  width: calc(8 * 90px - 2px);
+  width: calc(8 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-9 {
-  width: calc(9 * 90px - 2px);
+  width: calc(9 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-10 {
-  width: calc(10 * 90px - 2px);
+  width: calc(10 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-11 {
-  width: calc(11 * 90px - 2px);
+  width: calc(11 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-12 {
-  width: calc(12 * 90px - 2px);
+  width: calc(12 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-13 {
-  width: calc(13 * 90px - 2px);
+  width: calc(13 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-14 {
-  width: calc(14 * 90px - 2px);
+  width: calc(14 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-15 {
-  width: calc(15 * 90px - 2px);
+  width: calc(15 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-16 {
-  width: calc(16 * 90px - 2px);
+  width: calc(16 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-17 {
-  width: calc(17 * 90px - 2px);
+  width: calc(17 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-18 {
-  width: calc(18 * 90px - 2px);
+  width: calc(18 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-19 {
-  width: calc(19 * 90px - 2px);
+  width: calc(19 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-20 {
-  width: calc(20 * 90px - 2px);
+  width: calc(20 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-21 {
-  width: calc(21 * 90px - 2px);
+  width: calc(21 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-22 {
-  width: calc(22 * 90px - 2px);
+  width: calc(22 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-23 {
-  width: calc(23 * 90px - 2px);
+  width: calc(23 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-24 {
-  width: calc(24 * 90px - 2px);
+  width: calc(24 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-25 {
-  width: calc(25 * 90px - 2px);
+  width: calc(25 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 .cal-span-26 {
-  width: calc(26 * 90px - 2px);
+  width: calc(26 * var(--cal-time-col-width) - 2px);
   min-width: 20px;
 }
 

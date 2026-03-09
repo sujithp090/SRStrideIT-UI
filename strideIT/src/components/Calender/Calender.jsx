@@ -4,7 +4,7 @@ import UsersPanel from "../Users/UsersPanel";
 import LogsPage from "../LogsPage/LogsPage";
 import RestrictedCompaniesPage from "../LogsPage/RestrictedCompanyPage";
 import { BlockSlotModal } from "../RequestModal/BlockSlotModal";
-import strideMainLogo from "../../assets/strideMainLogo.svg";
+import strideMainLogo from "../../assets/strideMainLogo.png";
 import { SignupRequestsBell } from "../Login/SignUpPreRequestPanel";
 
 const SLOT_COUNT = 26;
@@ -320,8 +320,19 @@ export default function CalendarView({
               setShowLogs(true);
             }}
           >
-            <svg viewBox="0 0 24 24">
-              <path d="M4 6h16M4 12h16M4 18h16" />
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="9" cy="12" r="7" />
+              <polyline points="9 9 9 12 11 14" />
+              <line x1="17" y1="8" x2="22" y2="8" />
+              <line x1="17" y1="12" x2="22" y2="12" />
+              <line x1="17" y1="16" x2="22" y2="16" />
             </svg>
           </button>
 
@@ -342,8 +353,13 @@ export default function CalendarView({
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+              {/* List lines */}
+              <line x1="9" y1="6" x2="20" y2="6" />
+              <line x1="9" y1="12" x2="20" y2="12" />
+              <line x1="9" y1="18" x2="20" y2="18" />
+              {/* Flag marker on left */}
+              <path d="M4 3v18" />
+              <path d="M4 3l5 3-5 3" fill="currentColor" />
             </svg>
           </button>
 
@@ -357,9 +373,17 @@ export default function CalendarView({
                 setShowUsersPanel(true);
               }}
             >
-              <svg viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="9" cy="7" r="4" />
+                <path d="M3 21v-2a7 7 0 0 1 11.19-5.6" />
+                <path d="M16 19l2 2 4-4" />
               </svg>
             </button>
           )}
