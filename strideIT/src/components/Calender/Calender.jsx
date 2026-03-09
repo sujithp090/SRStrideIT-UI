@@ -577,6 +577,7 @@ export default function CalendarView({
                           clampedEnd - clampedStart,
                           1,
                         );
+                        const eventEndMinutes = eventStartMinutes + eventDurationMinutes;
 
                         let roundClass = "pending";
                         if (ev.round === "L1") roundClass = "round-l1";
@@ -596,6 +597,7 @@ export default function CalendarView({
                             style={{
                               "--event-start-minutes": eventStartMinutes,
                               "--event-duration-minutes": eventDurationMinutes,
+                              "--event-end-minutes": eventEndMinutes,
                             }}
                             onClick={(e) => {
                               e.stopPropagation();

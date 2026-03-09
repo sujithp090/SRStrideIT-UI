@@ -974,6 +974,7 @@ select.modal-input::-ms-expand {
 /* ── Events ─────────────────────────────────────────────────── */
 .cal-event {
   position: relative;
+  box-sizing: border-box;
   border-radius: 6px;
   font-size: 11px;
   cursor: pointer;
@@ -3352,10 +3353,7 @@ select.modal-input::-ms-expand {
   overflow: visible;
   z-index: 4;
   left: calc((var(--event-start-minutes, 0) * 100%) / var(--timeline-total-minutes));
-  width: max(
-    calc((var(--event-duration-minutes, 30) * 100%) / var(--timeline-total-minutes) - 2px),
-    20px
-  );
+  right: calc(100% - (var(--event-end-minutes, 30) * 100%) / var(--timeline-total-minutes));
 }
 .cal-event-status {
   display: inline-flex;
