@@ -635,6 +635,13 @@ select.modal-input::-ms-expand {
   padding: 12px 0;
   gap: 6px;
   flex-shrink: 0;
+  overflow: hidden;
+  transition: width 0.22s ease;
+}
+
+.cal-sidebar:hover {
+  width: 220px;
+  align-items: stretch;
 }
 
 .cal-sidebar-btn {
@@ -647,8 +654,33 @@ select.modal-input::-ms-expand {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
+  transition: background 0.2s, width 0.22s ease, justify-content 0.22s ease;
   color: rgba(255, 255, 255, 0.55);
+  position: relative;
+  white-space: nowrap;
+}
+
+.cal-sidebar:hover .cal-sidebar-btn {
+  width: calc(100% - 20px);
+  justify-content: flex-start;
+  padding-left: 10px;
+  gap: 10px;
+}
+
+.cal-sidebar-btn::after {
+  content: attr(title);
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+  opacity: 0;
+  max-width: 0;
+  overflow: hidden;
+  transition: opacity 0.18s ease, max-width 0.22s ease;
+}
+
+.cal-sidebar:hover .cal-sidebar-btn[title]::after {
+  opacity: 1;
+  max-width: 160px;
 }
 
 .cal-sidebar-btn:hover,
