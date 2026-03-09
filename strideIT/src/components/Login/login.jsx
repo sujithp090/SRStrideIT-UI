@@ -32,11 +32,13 @@ export default function LoginScreen({ onLogin }) {
       const rawInput = username.trim();
       const usernameInput = rawInput.toLowerCase();
       const mobileInput = normalizeMobile(rawInput);
+      const strippedInput = rawInput.replace(/[\s()+-]/g, "");
+      const isMobileLookup = /^\d+$/.test(strippedInput);
 
       // 🔎 Find account by mobile OR username (properly)
-      let query = supabase.from("profiles").select("username");
+      let query = supabase.from("profiles").select("id, email");
 
-      if (mobileInput.length >= 10) {
+      if (isMobileLookup && mobileInput.length >= 10) {
         query = query.eq("mobile", mobileInput);
       } else {
         query = query.eq("username", usernameInput);
@@ -53,7 +55,10 @@ export default function LoginScreen({ onLogin }) {
       }
 
       // 🔐 Sign in using email + password
-      const { error: loginError } = await supabase.auth.signInWithPassword({
+      const {
+        data: loginData,
+        error: loginError,
+      } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -64,7 +69,17 @@ export default function LoginScreen({ onLogin }) {
         return;
       }
 
-      navigate("/dashboard");
+      if (loginData?.user?.id) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id, name, email, role, username, calendars, mobile")
+          .eq("id", loginData.user.id)
+          .single();
+
+        if (profile) {
+          onLogin(profile);
+        }
+      }
     } catch (err) {
       console.error(err);
       setError("Something went wrong. Please try again.");
