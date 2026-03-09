@@ -54,7 +54,7 @@ const firstNonEmptyValue = (...values) => {
 
 const normalizeLookupKey = (value) => String(value ?? "").trim().toLowerCase();
 
-const rowToEvent = (row, profileMobileByCandidate = {}) => ({
+const rowToEvent = (row, profileMobileByCandidate = {}, defaultMobile = "") => ({
   id: row.id,
   candidate: row.candidate,
   company: row.company,
@@ -67,6 +67,7 @@ const rowToEvent = (row, profileMobileByCandidate = {}) => ({
     row.mobile_no,
     row.phone,
     profileMobileByCandidate[normalizeLookupKey(row.candidate)],
+    defaultMobile,
   ),
   calendar: normalizeCalendar(row.calendar),
   start: new Date(row.start_time),
@@ -185,6 +186,7 @@ export default function App() {
 
     if (!error && data) {
       const profileMobileByCandidate = {};
+      let fallbackProfileMobile = firstNonEmptyValue(user?.mobile);
 
       const { data: profiles } = await supabase
         .from("profiles")
@@ -193,6 +195,8 @@ export default function App() {
       (profiles ?? []).forEach((profile) => {
         const mobile = firstNonEmptyValue(profile.mobile);
         if (!mobile) return;
+
+        fallbackProfileMobile = firstNonEmptyValue(fallbackProfileMobile, mobile);
 
         const nameKey = normalizeLookupKey(profile.name);
         const usernameKey = normalizeLookupKey(profile.username);
@@ -206,7 +210,11 @@ export default function App() {
         }
       });
 
-      setEvents(data.map((row) => rowToEvent(row, profileMobileByCandidate)));
+      setEvents(
+        data.map((row) =>
+          rowToEvent(row, profileMobileByCandidate, fallbackProfileMobile),
+        ),
+      );
     }
 
     setEventsLoading(false);
