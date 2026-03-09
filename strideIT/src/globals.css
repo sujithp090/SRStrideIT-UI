@@ -3405,7 +3405,7 @@ select.modal-input::-ms-expand {
   bottom: 2px;
   z-index: 4;
   left: calc((var(--event-start-minutes, 0) / 30) * var(--cal-time-col-width));
-  width: calc((var(--event-duration-minutes, 30) / 30) * var(--cal-time-col-width));
+  width: calc((var(--event-duration-minutes, 30) * 4.2px));
 }
 .cal-event-status {
   display: inline-flex;
