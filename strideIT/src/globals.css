@@ -863,6 +863,7 @@ select.modal-input::-ms-expand {
   z-index: 11;
 }
 .cal-time-header-cell {
+  box-sizing: border-box;
   padding: 8px 4px;
   font-size: 10px;
   font-weight: 600;
@@ -3332,6 +3333,7 @@ select.modal-input::-ms-expand {
   height: 100%;
 }
 .cal-grid-bg-cell {
+  box-sizing: border-box;
   width: 90px;
   min-width: 90px;
   max-width: 90px;
