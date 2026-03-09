@@ -23,6 +23,55 @@ export default function LoginScreen({ onLogin }) {
     return num.replace(/\D/g, "").slice(-10);
   };
 
+  const getProfileByUserId = async (userId) => {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id, name, email, role, username, calendars, mobile")
+      .eq("id", userId)
+      .single();
+
+    return profile;
+  };
+
+  const resolveLoginAccount = async ({ rawInput, usernameInput, mobileInput }) => {
+    const strippedInput = rawInput.replace(/[\s()+-]/g, "");
+    const isMobileLookup = /^\d+$/.test(strippedInput);
+
+    if (isMobileLookup && mobileInput.length >= 10) {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, email, username")
+        .eq("mobile", mobileInput)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    }
+
+    const { data: exactUser, error: exactUserError } = await supabase
+      .from("profiles")
+      .select("id, email, username")
+      .eq("username", usernameInput)
+      .maybeSingle();
+
+    if (exactUserError) throw exactUserError;
+    if (exactUser) return exactUser;
+
+    const { data: looseMatches, error: looseMatchesError } = await supabase
+      .from("profiles")
+      .select("id, email, username")
+      .ilike("username", `%${usernameInput}%`)
+      .limit(20);
+
+    if (looseMatchesError) throw looseMatchesError;
+
+    return (
+      looseMatches?.find(
+        (item) => item.username?.trim().toLowerCase() === usernameInput,
+      ) ?? null
+    );
+  };
+
   /* ── Login ── */
   const handleLogin = async () => {
     setError("");
@@ -32,55 +81,67 @@ export default function LoginScreen({ onLogin }) {
       const rawInput = username.trim();
       const usernameInput = rawInput.toLowerCase();
       const mobileInput = normalizeMobile(rawInput);
+      const isEmailInput = /@/.test(usernameInput);
 
-      // 🔎 Find account by mobile OR username (properly)
-      let query = supabase.from("profiles").select("username");
+      let email = null;
 
-      if (mobileInput.length >= 10) {
-        query = query.eq("mobile", mobileInput);
+      if (isEmailInput) {
+        email = usernameInput;
       } else {
-        query = query.eq("username", usernameInput);
+        const account = await resolveLoginAccount({
+          rawInput,
+          usernameInput,
+          mobileInput,
+        });
+
+        email = account?.email || null;
       }
 
-      const { data: account, error: accountError } = await query.maybeSingle();
-
-      const email = account?.email || null;
-
-      if (accountError || !email) {
+      if (!email) {
         setError("No account found with that username/mobile number.");
-        setLoading(false);
         return;
       }
 
       // 🔐 Sign in using email + password
-      const { error: loginError } = await supabase.auth.signInWithPassword({
+      const {
+        data: loginData,
+        error: loginError,
+      } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (loginError) {
         setError("Invalid password.");
-        setLoading(false);
         return;
       }
 
-      navigate("/dashboard");
+      if (loginData?.user?.id) {
+        const profile = await getProfileByUserId(loginData.user.id);
+        if (profile) onLogin(profile);
+      }
     } catch (err) {
       console.error(err);
       setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   /* ── Signup ── */
   const handleSignup = async () => {
     setError("");
+
+    const normalizedSignupName = signupName.trim();
+    const normalizedSignupUsername = signupUsername.trim().toLowerCase();
+    const normalizedSignupEmail = signupEmail.trim().toLowerCase();
+    const normalizedSignupMobile = normalizeMobile(signupMobile);
+
     if (
-      !signupName.trim() ||
-      !signupUsername.trim() ||
-      !signupEmail.trim() ||
-      !signupMobile.trim() ||
+      !normalizedSignupName ||
+      !normalizedSignupUsername ||
+      !normalizedSignupEmail ||
+      !normalizedSignupMobile ||
       !signupPassword
     ) {
       setError("All fields are required.");
@@ -90,12 +151,10 @@ export default function LoginScreen({ onLogin }) {
       setError("Password must be at least 6 characters.");
       return;
     }
-    if (!/^[a-z0-9_]+$/.test(signupUsername.trim())) {
+    if (!/^[a-z0-9_]+$/.test(normalizedSignupUsername)) {
       setError("Username: lowercase letters, numbers, underscores only.");
       return;
     }
-
-    const normalizedSignupMobile = normalizeMobile(signupMobile);
     if (normalizedSignupMobile.length < 10) {
       setError("Enter a valid mobile number.");
       return;
@@ -103,75 +162,92 @@ export default function LoginScreen({ onLogin }) {
 
     setLoading(true);
 
-    // Check username not already taken
-    const { data: existingProfile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("username", signupUsername.trim().toLowerCase())
-      .single();
+    try {
+      const { data: existingProfile, error: existingProfileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("username", normalizedSignupUsername)
+        .maybeSingle();
 
-    if (existingProfile) {
-      setError("That username is already taken.");
-      setLoading(false);
-      return;
-    }
+      if (existingProfileError) {
+        throw existingProfileError;
+      }
 
-    const { data: existingReq } = await supabase
-      .from("signup_requests")
-      .select("id")
-      .eq("username", signupUsername.trim().toLowerCase())
-      .single();
+      if (existingProfile) {
+        setError("That username is already taken.");
+        return;
+      }
 
-    if (existingReq) {
-      setError("A request with that username is already pending.");
-      setLoading(false);
-      return;
-    }
+      const { data: existingReq, error: existingReqError } = await supabase
+        .from("signup_requests")
+        .select("id")
+        .eq("username", normalizedSignupUsername)
+        .in("status", ["pending", "approved"])
+        .maybeSingle();
 
-    const { data: existingMobileProfile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("mobile", normalizedSignupMobile)
-      .maybeSingle();
+      if (existingReqError) {
+        throw existingReqError;
+      }
 
-    if (existingMobileProfile) {
-      setError("That mobile number is already in use.");
-      setLoading(false);
-      return;
-    }
+      if (existingReq) {
+        setError("A request with that username is already pending.");
+        return;
+      }
 
-    const { data: existingMobileReq } = await supabase
-      .from("signup_requests")
-      .select("id")
-      .eq("mobile", normalizedSignupMobile)
-      .in("status", ["pending", "approved"])
-      .maybeSingle();
+      const {
+        data: existingMobileProfile,
+        error: existingMobileProfileError,
+      } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("mobile", normalizedSignupMobile)
+        .maybeSingle();
 
-    if (existingMobileReq) {
-      setError("A request with that mobile number already exists.");
-      setLoading(false);
-      return;
-    }
+      if (existingMobileProfileError) {
+        throw existingMobileProfileError;
+      }
 
-    const { error: insertError } = await supabase
-      .from("signup_requests")
-      .insert({
-        name: signupName.trim(),
-        username: signupUsername.trim().toLowerCase(),
-        email: signupEmail.trim().toLowerCase(),
+      if (existingMobileProfile) {
+        setError("That mobile number is already in use.");
+        return;
+      }
+
+      const { data: existingMobileReq, error: existingMobileReqError } = await supabase
+        .from("signup_requests")
+        .select("id")
+        .eq("mobile", normalizedSignupMobile)
+        .in("status", ["pending", "approved"])
+        .maybeSingle();
+
+      if (existingMobileReqError) {
+        throw existingMobileReqError;
+      }
+
+      if (existingMobileReq) {
+        setError("A request with that mobile number already exists.");
+        return;
+      }
+
+      const { error: insertError } = await supabase.from("signup_requests").insert({
+        name: normalizedSignupName,
+        username: normalizedSignupUsername,
+        email: normalizedSignupEmail,
         mobile: normalizedSignupMobile,
         password_hash: signupPassword,
         status: "pending",
       });
 
-    if (insertError) {
-      setError("Failed to submit request. Try again.");
-      setLoading(false);
-      return;
-    }
+      if (insertError) {
+        throw insertError;
+      }
 
-    setLoading(false);
-    setSignupDone(true);
+      setSignupDone(true);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to submit request. Try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleKeyDown = (e) => {

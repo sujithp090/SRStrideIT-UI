@@ -863,6 +863,7 @@ select.modal-input::-ms-expand {
   z-index: 11;
 }
 .cal-time-header-cell {
+  box-sizing: border-box;
   padding: 8px 4px;
   font-size: 10px;
   font-weight: 600;
@@ -973,6 +974,7 @@ select.modal-input::-ms-expand {
 /* ── Events ─────────────────────────────────────────────────── */
 .cal-event {
   position: relative;
+  box-sizing: border-box;
   border-radius: 6px;
   font-size: 11px;
   cursor: pointer;
@@ -3325,12 +3327,14 @@ select.modal-input::-ms-expand {
   position: relative;
   width: calc(26 * 90px);
   flex-shrink: 0;
+  --timeline-total-minutes: 780;
 }
 .cal-grid-bg-row {
   display: flex;
   height: 100%;
 }
 .cal-grid-bg-cell {
+  box-sizing: border-box;
   width: 90px;
   min-width: 90px;
   max-width: 90px;
@@ -3346,8 +3350,9 @@ select.modal-input::-ms-expand {
   position: absolute;
   top: 2px;
   bottom: 2px;
-  overflow: visible;
   z-index: 4;
+  left: calc(var(--event-start-minutes, 0) * 3px);
+  width: calc((var(--event-duration-minutes, 30) * 4.5px));
 }
 .cal-event-status {
   display: inline-flex;
