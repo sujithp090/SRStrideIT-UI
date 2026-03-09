@@ -8,7 +8,9 @@ import strideMainLogo from "../../assets/strideMainLogo.svg";
 import { SignupRequestsBell } from "../Login/SignUpPreRequestPanel";
 
 const SLOT_COUNT = 26;
+const SLOT_WIDTH_PX = 90;
 const GRID_START = 8 * 60; // 8:00 AM in minutes
+const GRID_END = GRID_START + SLOT_COUNT * 30;
 
 const HOURS = Array.from({ length: SLOT_COUNT }, (_, i) => {
   const totalMinutes = GRID_START + i * 30;
@@ -559,26 +561,23 @@ export default function CalendarView({
 
                       {/* Events — absolutely positioned using pixel offset */}
                       {dayEvents.map((ev) => {
-                        const startSlot = Math.max(
-                          0,
-                          Math.floor(
-                            (ev.start.getHours() * 60 +
-                              ev.start.getMinutes() -
-                              GRID_START) /
-                              30,
-                          ),
+                        const startMinutes =
+                          ev.start.getHours() * 60 + ev.start.getMinutes();
+                        const endMinutes =
+                          ev.end.getHours() * 60 + ev.end.getMinutes();
+
+                        if (endMinutes <= GRID_START || startMinutes >= GRID_END) {
+                          return null;
+                        }
+
+                        const clampedStart = Math.max(startMinutes, GRID_START);
+                        const clampedEnd = Math.min(endMinutes, GRID_END);
+
+                        const leftPx = ((clampedStart - GRID_START) / 30) * SLOT_WIDTH_PX;
+                        const widthPx = Math.max(
+                          ((clampedEnd - clampedStart) / 30) * SLOT_WIDTH_PX - 2,
+                          20,
                         );
-                        const endSlot = Math.min(
-                          SLOT_COUNT,
-                          Math.ceil(
-                            (ev.end.getHours() * 60 +
-                              ev.end.getMinutes() -
-                              GRID_START) /
-                              30,
-                          ),
-                        );
-                        const span = Math.max(1, endSlot - startSlot);
-                        if (startSlot >= SLOT_COUNT) return null;
 
                         let roundClass = "pending";
                         if (ev.round === "L1") roundClass = "round-l1";
@@ -594,7 +593,8 @@ export default function CalendarView({
                               ev.status === "approved"
                                 ? "cal-event-approved"
                                 : "cal-event-unapproved"
-                            } cal-event-pos cal-col-${startSlot} cal-span-${span}`}
+                            } cal-event-pos`}
+                            style={{ left: `${leftPx}px`, width: `${widthPx}px` }}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleEventCardClick(ev);
