@@ -3462,6 +3462,19 @@ select.modal-input::-ms-expand {
   background: rgba(220, 38, 38, 0.1);
   border-left-width: 4px;
 }
+
+.cal-block-pos {
+  --cal-event-gap: 8px;
+  left: calc(
+    (var(--block-start-minutes, 0) / 30) * var(--cal-time-col-width) +
+      (var(--cal-event-gap) / 2)
+  );
+  right: calc(
+    ((var(--timeline-total-minutes, 780) - var(--block-end-minutes, 780)) / 30) *
+      var(--cal-time-col-width) +
+      (var(--cal-event-gap) / 2)
+  );
+}
 .cal-block-label {
   font-size: 10.5px;
   font-weight: 700;
