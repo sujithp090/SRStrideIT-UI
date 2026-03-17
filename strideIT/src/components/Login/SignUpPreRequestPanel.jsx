@@ -58,12 +58,16 @@ export function SignupRequestsBell({
   const handleApprove = async (req) => {
     try {
       setOnboarding(req.id);
+      const sel = getSel(req.id);
 
-      // 1️⃣ Create auth user
-      const { data, error } = await supabase.auth.admin.createUser({
+      const {
+        data: { session: adminSession },
+      } = await supabase.auth.getSession();
+
+      // 1️⃣ Create auth user (browser clients can't call admin.createUser with anon keys)
+      const { data, error } = await supabase.auth.signUp({
         email: req.email,
         password: req.password_hash,
-        email_confirm: true,
       });
 
       if (error) {
@@ -72,13 +76,29 @@ export function SignupRequestsBell({
         return;
       }
 
+      const userId = data?.user?.id;
+
+      if (!userId) {
+        notify("Failed to onboard user: no auth user id returned.", "error");
+        setOnboarding(null);
+        return;
+      }
+
+      // If signUp returned a session for the created user, restore admin session.
+      if (adminSession && data?.session) {
+        await supabase.auth.setSession({
+          access_token: adminSession.access_token,
+          refresh_token: adminSession.refresh_token,
+        });
+      }
+
       // 2️⃣ Insert into profiles (linked to auth user id)
       const { error: profileError } = await supabase.from("profiles").insert({
-        id: data.user.id,
+        id: userId,
         username: req.username,
         mobile: req.mobile,
-        calendars: req.calendars,
-        role: req.role,
+        calendars: sel.calendars,
+        role: sel.role,
         name: req.name,
         email: req.email,
       });
