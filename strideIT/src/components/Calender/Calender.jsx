@@ -560,20 +560,24 @@ export default function CalendarView({
                         const [eh, em] = b.endTime.split(":").map(Number);
                         const startMins = sh * 60 + sm;
                         const endMins = eh * 60 + em;
-                        const startSlot = Math.max(
-                          0,
-                          Math.floor((startMins - GRID_START) / 30),
-                        );
-                        const endSlot = Math.min(
-                          SLOT_COUNT,
-                          Math.ceil((endMins - GRID_START) / 30),
-                        );
-                        const span = Math.max(1, endSlot - startSlot);
-                        if (startSlot >= SLOT_COUNT) return null;
+
+                        if (endMins <= GRID_START || startMins >= GRID_END) {
+                          return null;
+                        }
+
+                        const clampedStart = Math.max(startMins, GRID_START);
+                        const clampedEnd = Math.min(endMins, GRID_END);
+                        const blockStartMinutes = clampedStart - GRID_START;
+                        const blockEndMinutes = clampedEnd - GRID_START;
+
                         return (
                           <div
                             key={b.id}
-                            className={`cal-block-bar cal-col-${startSlot} cal-span-${span}`}
+                            className="cal-block-bar cal-block-pos"
+                            style={{
+                              "--block-start-minutes": blockStartMinutes,
+                              "--block-end-minutes": blockEndMinutes,
+                            }}
                           >
                             <span className="cal-block-label">
                               🚫 {b.label}
@@ -664,9 +668,6 @@ export default function CalendarView({
                               </div>
                               <div className="cal-event-company">
                                 Company: {ev.company}
-                              </div>
-                              <div className="cal-event-mobile">
-                                Mobile no: {ev.mobile}
                               </div>
                               <div className="cal-event-time">
                                 {ev.start.toLocaleTimeString([], {
@@ -773,6 +774,7 @@ export default function CalendarView({
             setActiveNav("calendar");
           }}
           blockedSlots={blockedSlots}
+          events={events}
           onSave={onSaveBlock}
         />
       )}

@@ -19,6 +19,14 @@ const toMinutes = (time) => {
   return h * 60 + m;
 };
 
+const fileToDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Unable to read image file."));
+    reader.readAsDataURL(file);
+  });
+
 const ChevronIcon = () => (
   <svg
     width="16"
@@ -123,6 +131,17 @@ export function NewRequestModal({
 
     setSubmitting(true);
 
+    let imageDataUrl = null;
+    if (file) {
+      try {
+        imageDataUrl = await fileToDataUrl(file);
+      } catch {
+        setSubmitting(false);
+        setConflictError("Unable to process the uploaded image. Please try another file.");
+        return;
+      }
+    }
+
     const result = await onSubmit({
       candidate,
       company,
@@ -131,7 +150,7 @@ export function NewRequestModal({
       date,
       startTime,
       endTime,
-      image: file ? URL.createObjectURL(file) : null,
+      image: imageDataUrl,
       status: "pending",
       title: `Interview - ${candidate}`,
       start: new Date(`${date}T${startTime}`),
@@ -470,7 +489,8 @@ export function NewRequestModal({
             !startTime ||
             !endTime ||
             !company ||
-            (round === "Custom" && !customRound)
+            (round === "Custom" && !customRound) ||
+            Boolean(restrictedInfo)
           }
         >
           {submitting ? "Checking..." : "Submit Request"}

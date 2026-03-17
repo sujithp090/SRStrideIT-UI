@@ -907,7 +907,7 @@ select.modal-input::-ms-expand {
   font-size: 10px;
   font-weight: 600;
   color: var(--gray-600);
-  text-align: center;
+  text-align: left;
   letter-spacing: 0.2px;
   border-right: 1px solid var(--gray-100);
   white-space: nowrap;
@@ -915,7 +915,8 @@ select.modal-input::-ms-expand {
   text-overflow: ellipsis;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-left: 8px;
   min-width: var(--cal-time-col-width);
   flex: 0 0 var(--cal-time-col-width);
 }
@@ -3406,14 +3407,21 @@ select.modal-input::-ms-expand {
   background: rgba(219, 234, 254, 0.15);
 }
 .cal-event-pos {
+  --cal-event-gap: 8px;
   position: absolute;
   top: 2px;
   bottom: 2px;
   z-index: 4;
-  left: calc((var(--event-start-minutes, 0) / 30) * var(--cal-time-col-width));
-  width: calc(
-    (var(--event-duration-minutes, 30) * var(--cal-time-col-width) / 20)
+  left: calc(
+    (var(--event-start-minutes, 0) / 30) * var(--cal-time-col-width) +
+      (var(--cal-event-gap) / 2)
   );
+  right: calc(
+    ((var(--timeline-total-minutes, 780) - var(--event-end-minutes, 30)) / 30) *
+      var(--cal-time-col-width) +
+      (var(--cal-event-gap) / 2)
+  );
+  min-width: 44px;
 }
 .cal-event-status {
   display: inline-flex;
@@ -3454,6 +3462,19 @@ select.modal-input::-ms-expand {
   width: calc(26 * var(--cal-time-col-width));
   background: rgba(220, 38, 38, 0.1);
   border-left-width: 4px;
+}
+
+.cal-block-pos {
+  --cal-event-gap: 8px;
+  left: calc(
+    (var(--block-start-minutes, 0) / 30) * var(--cal-time-col-width) +
+      (var(--cal-event-gap) / 2)
+  );
+  right: calc(
+    ((var(--timeline-total-minutes, 780) - var(--block-end-minutes, 780)) / 30) *
+      var(--cal-time-col-width) +
+      (var(--cal-event-gap) / 2)
+  );
 }
 .cal-block-label {
   font-size: 10.5px;
