@@ -3406,13 +3406,21 @@ select.modal-input::-ms-expand {
   background: rgba(219, 234, 254, 0.15);
 }
 .cal-event-pos {
+  --cal-event-gap: 8px;
   position: absolute;
   top: 2px;
   bottom: 2px;
   z-index: 4;
-  left: calc((var(--event-start-minutes, 0) / 30) * var(--cal-time-col-width));
-  width: calc(
-    (var(--event-duration-minutes, 30) * var(--cal-time-col-width) / 30) - 4px
+  left: calc(
+    (var(--event-start-minutes, 0) / 30) * var(--cal-time-col-width) +
+      (var(--cal-event-gap) / 2)
+  );
+  width: max(
+    44px,
+    calc(
+      (var(--event-duration-minutes, 30) * var(--cal-time-col-width) / 30) -
+        var(--cal-event-gap)
+    )
   );
 }
 .cal-event-status {
