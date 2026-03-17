@@ -6,7 +6,14 @@ const toDateInput = (d) =>
 
 const todayStr = toDateInput(new Date());
 
-export function BlockSlotModal({ onClose, onSave, blockedSlots = [] }) {
+const getLocalDate = (date) => toDateInput(new Date(date));
+
+export function BlockSlotModal({
+  onClose,
+  onSave,
+  blockedSlots = [],
+  events = [],
+}) {
   const [mode, setMode] = useState("range"); // "range" | "day"
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
@@ -14,6 +21,30 @@ export function BlockSlotModal({ onClose, onSave, blockedSlots = [] }) {
   const [label, setLabel] = useState("");
   const [error, setError] = useState("");
   const [calendar, setCalendar] = useState("boys");
+
+
+  const overlappingInterviews =
+    date && mode === "range" && startTime && endTime
+      ? events.filter((event) => {
+          if (event.status === "rejected") return false;
+          const eventDate = getLocalDate(event.start);
+          if (eventDate !== date) return false;
+          if (calendar !== "both" && event.calendar !== calendar) return false;
+
+          const eventStart = event.start.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+          const eventEnd = event.end.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+
+          return startTime < eventEnd && endTime > eventStart;
+        })
+      : [];
 
   const handleSave = () => {
     setError("");
@@ -162,6 +193,16 @@ export function BlockSlotModal({ onClose, onSave, blockedSlots = [] }) {
             onChange={(e) => setLabel(e.target.value)}
           />
         </div>
+
+        {overlappingInterviews.length > 0 && (
+          <div className="block-error">
+            ⚠️ {overlappingInterviews.length} interview(s) already scheduled in this time range:
+            {" "}
+            {overlappingInterviews
+              .map((event) => `${event.candidate} (${event.start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}–${event.end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})`)
+              .join(", ")}
+          </div>
+        )}
 
         {/* Existing blocks list */}
         {blockedSlots.length > 0 && (

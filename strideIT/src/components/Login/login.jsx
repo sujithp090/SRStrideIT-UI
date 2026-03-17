@@ -11,7 +11,6 @@ export default function LoginScreen({ onLogin }) {
   const [loading, setLoading] = useState(false);
 
   // Signup fields
-  const [signupName, setSignupName] = useState("");
   const [signupUsername, setSignupUsername] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupMobile, setSignupMobile] = useState("");
@@ -132,13 +131,11 @@ export default function LoginScreen({ onLogin }) {
   const handleSignup = async () => {
     setError("");
 
-    const normalizedSignupName = signupName.trim();
     const normalizedSignupUsername = signupUsername.trim().toLowerCase();
     const normalizedSignupEmail = signupEmail.trim().toLowerCase();
     const normalizedSignupMobile = normalizeMobile(signupMobile);
 
     if (
-      !normalizedSignupName ||
       !normalizedSignupUsername ||
       !normalizedSignupEmail ||
       !normalizedSignupMobile ||
@@ -229,7 +226,7 @@ export default function LoginScreen({ onLogin }) {
       }
 
       const { error: insertError } = await supabase.from("signup_requests").insert({
-        name: normalizedSignupName,
+        name: normalizedSignupUsername,
         username: normalizedSignupUsername,
         email: normalizedSignupEmail,
         mobile: normalizedSignupMobile,
@@ -288,7 +285,6 @@ export default function LoginScreen({ onLogin }) {
               onClick={() => {
                 setMode("login");
                 setSignupDone(false);
-                setSignupName("");
                 setSignupUsername("");
                 setSignupEmail("");
                 setSignupMobile("");
@@ -320,18 +316,6 @@ export default function LoginScreen({ onLogin }) {
 
           {error && <div className="login-error-msg">⚠ {error}</div>}
 
-          <div className="login-field">
-            <label className="login-label">Full Name</label>
-            <input
-              className="login-input"
-              type="text"
-              placeholder="e.g. Jane Doe"
-              value={signupName}
-              onChange={(e) => setSignupName(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={loading}
-            />
-          </div>
           <div className="login-field">
             <label className="login-label">Username</label>
             <input

@@ -773,6 +773,7 @@ export default function CalendarView({
             setActiveNav("calendar");
           }}
           blockedSlots={blockedSlots}
+          events={events}
           onSave={onSaveBlock}
         />
       )}

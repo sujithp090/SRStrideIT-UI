@@ -3412,7 +3412,7 @@ select.modal-input::-ms-expand {
   z-index: 4;
   left: calc((var(--event-start-minutes, 0) / 30) * var(--cal-time-col-width));
   width: calc(
-    (var(--event-duration-minutes, 30) * var(--cal-time-col-width) / 20)
+    (var(--event-duration-minutes, 30) * var(--cal-time-col-width) / 30) - 4px
   );
 }
 .cal-event-status {
