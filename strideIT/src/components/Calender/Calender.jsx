@@ -665,9 +665,6 @@ export default function CalendarView({
                               <div className="cal-event-company">
                                 Company: {ev.company}
                               </div>
-                              <div className="cal-event-mobile">
-                                Mobile no: {ev.mobile}
-                              </div>
                               <div className="cal-event-time">
                                 {ev.start.toLocaleTimeString([], {
                                   hour: "2-digit",

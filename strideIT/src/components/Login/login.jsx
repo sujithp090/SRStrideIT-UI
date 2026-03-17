@@ -13,7 +13,6 @@ export default function LoginScreen({ onLogin }) {
   // Signup fields
   const [signupUsername, setSignupUsername] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
-  const [signupMobile, setSignupMobile] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupDone, setSignupDone] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -133,12 +132,10 @@ export default function LoginScreen({ onLogin }) {
 
     const normalizedSignupUsername = signupUsername.trim().toLowerCase();
     const normalizedSignupEmail = signupEmail.trim().toLowerCase();
-    const normalizedSignupMobile = normalizeMobile(signupMobile);
 
     if (
       !normalizedSignupUsername ||
       !normalizedSignupEmail ||
-      !normalizedSignupMobile ||
       !signupPassword
     ) {
       setError("All fields are required.");
@@ -152,11 +149,6 @@ export default function LoginScreen({ onLogin }) {
       setError("Username: lowercase letters, numbers, underscores only.");
       return;
     }
-    if (normalizedSignupMobile.length < 10) {
-      setError("Enter a valid mobile number.");
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -191,45 +183,10 @@ export default function LoginScreen({ onLogin }) {
         return;
       }
 
-      const {
-        data: existingMobileProfile,
-        error: existingMobileProfileError,
-      } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("mobile", normalizedSignupMobile)
-        .maybeSingle();
-
-      if (existingMobileProfileError) {
-        throw existingMobileProfileError;
-      }
-
-      if (existingMobileProfile) {
-        setError("That mobile number is already in use.");
-        return;
-      }
-
-      const { data: existingMobileReq, error: existingMobileReqError } = await supabase
-        .from("signup_requests")
-        .select("id")
-        .eq("mobile", normalizedSignupMobile)
-        .in("status", ["pending", "approved"])
-        .maybeSingle();
-
-      if (existingMobileReqError) {
-        throw existingMobileReqError;
-      }
-
-      if (existingMobileReq) {
-        setError("A request with that mobile number already exists.");
-        return;
-      }
-
       const { error: insertError } = await supabase.from("signup_requests").insert({
         name: normalizedSignupUsername,
         username: normalizedSignupUsername,
         email: normalizedSignupEmail,
-        mobile: normalizedSignupMobile,
         password_hash: signupPassword,
         status: "pending",
       });
@@ -287,7 +244,6 @@ export default function LoginScreen({ onLogin }) {
                 setSignupDone(false);
                 setSignupUsername("");
                 setSignupEmail("");
-                setSignupMobile("");
                 setSignupPassword("");
               }}
             >
@@ -358,23 +314,6 @@ export default function LoginScreen({ onLogin }) {
               disabled={loading}
             />
           </div>
-          <div className="login-field">
-            <label className="login-label">Mobile Number</label>
-            <input
-              className="login-input"
-              type="tel"
-              placeholder="10-digit mobile number"
-              value={signupMobile}
-              onChange={(e) =>
-                setSignupMobile(e.target.value.replace(/\D/g, ""))
-              }
-              onKeyDown={handleKeyDown}
-              disabled={loading}
-              inputMode="numeric"
-              maxLength={15}
-            />
-          </div>
-
           <button
             className="login-btn"
             onClick={handleSignup}
