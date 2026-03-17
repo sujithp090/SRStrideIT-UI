@@ -907,7 +907,7 @@ select.modal-input::-ms-expand {
   font-size: 10px;
   font-weight: 600;
   color: var(--gray-600);
-  text-align: center;
+  text-align: left;
   letter-spacing: 0.2px;
   border-right: 1px solid var(--gray-100);
   white-space: nowrap;
@@ -915,7 +915,8 @@ select.modal-input::-ms-expand {
   text-overflow: ellipsis;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-left: 8px;
   min-width: var(--cal-time-col-width);
   flex: 0 0 var(--cal-time-col-width);
 }
